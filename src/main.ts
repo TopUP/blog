@@ -7,18 +7,23 @@ async function bootstrap() {
     const app = await NestFactory.create(AppModule);
 
     const swaggerConfig = new DocumentBuilder()
-        .setTitle('nestBlog')
-        .setDescription('blog on nest')
+        .setTitle('Blog')
+        .setDescription('Blog')
         .setVersion('0.0.1')
-        // .addTag('js node nest blog')
+        .addBearerAuth()
         .build();
     const swaggerDocument = SwaggerModule.createDocument(app, swaggerConfig);
     SwaggerModule.setup('api', app, swaggerDocument);
 
     app.useGlobalPipes(
-        new ValidationPipe({ whitelist: true, transform: true }),
+        new ValidationPipe({
+            whitelist: true,
+            transform: true,
+        }),
     );
 
     await app.listen(3000);
+
+    console.log(`Application is running on: ${await app.getUrl()}`);
 }
 bootstrap();

@@ -13,8 +13,8 @@ export class UserService {
         private repository: Repository<User>,
     ) {}
 
-    create(createUserDto: CreateUserDto) {
-        return this.repository.save({ ...createUserDto });
+    create(data: CreateUserDto) {
+        return this.repository.save({ ...data });
     }
 
     findAll() {
@@ -25,8 +25,8 @@ export class UserService {
         return this.repository.findOneBy({ id });
     }
 
-    update(id: number, updateUserDto: UpdateUserDto) {
-        return this.repository.save({ ...updateUserDto, id });
+    update(id: number, data: UpdateUserDto) {
+        return this.repository.save({ ...data, id });
     }
 
     async remove(id: number) {

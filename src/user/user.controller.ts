@@ -8,8 +8,7 @@ import {
     Delete,
     HttpStatus,
     Res,
-    BadRequestException,
-    ParseIntPipe,
+    ParseIntPipe, UseGuards,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -17,6 +16,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { User } from './entities/user.entity';
 import {emailAlreadyExistsHandler} from "../utils/validation/helpers";
+import {AuthGuard} from "@nestjs/passport";
 
 @ApiTags('User')
 @ApiBearerAuth()
@@ -24,6 +24,7 @@ import {emailAlreadyExistsHandler} from "../utils/validation/helpers";
 export class UserController {
     constructor(private readonly userService: UserService) {}
 
+    @UseGuards(AuthGuard('jwt'))
     @Post()
     @ApiOperation({ summary: 'Создание нового пользователя' })
     @ApiQuery({ name: 'full_name', required: true, description: 'ФИО' })
@@ -33,8 +34,8 @@ export class UserController {
     @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Bad Request' })
     @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Unauthorized.' })
     @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Forbidden.' })
-    create(@Body() createUserDto: CreateUserDto) {
-        return this.userService.create(createUserDto).catch(emailAlreadyExistsHandler);
+    async create(@Body() createUserDto: CreateUserDto) {
+        return await this.userService.create(createUserDto).catch(emailAlreadyExistsHandler);
     }
 
     @Get()
@@ -59,6 +60,7 @@ export class UserController {
         return res.json(user);
     }
 
+    @UseGuards(AuthGuard('jwt'))
     @Patch(':id')
     @ApiOperation({ summary: 'Изменение пользователя' })
     @ApiParam({ name: 'id', required: true, description: 'ID' })
@@ -80,6 +82,7 @@ export class UserController {
         return res.json(user);
     }
 
+    @UseGuards(AuthGuard('jwt'))
     @Delete(':id')
     @ApiParam({ name: 'id', required: true, description: 'ID' })
     @ApiResponse({ status: HttpStatus.CREATED, description: 'Deleted', type: User })

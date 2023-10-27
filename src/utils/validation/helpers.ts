@@ -15,7 +15,12 @@ export async function emailAlreadyExistsHandler(e) {
         e.code === 'SQLITE_CONSTRAINT'
 
     ) {
-        throw new BadRequestException('Account with this email already exists.');
+        // throw new BadRequestException('Account with this email already exists.');
+        throw new BadRequestException({
+            'message': [ 'Account with this email already exists.', ],
+            'error': 'Bad Request',
+            'statusCode': 400
+        });
     }
 
     return;

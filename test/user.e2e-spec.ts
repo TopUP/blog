@@ -1,29 +1,41 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { HttpStatus, INestApplication, ValidationPipe } from '@nestjs/common';
 import * as request from 'supertest';
-import { TypeORMTestingModule } from 'src/utils/test/helpers';
+import {registerTestUser, TypeORMTestingModule} from 'src/utils/test/helpers';
 import { User }                 from 'src/user/entities/user.entity';
 import { UserModule }           from 'src/user/user.module';
 import { CreateUserDto }        from 'src/user/dto/create-user.dto';
+import {AuthModule}             from "../src/auth/auth.module";
+import {RegisterUserDto} from "../src/auth/dto/register-user.dto";
 
-describe('UserController (e2e)', () => {
+describe('UserController (e2e) User exceptions', () => {
     let app: INestApplication;
-    const exampleUser = {
+    let accessToken: string;
+
+    const adminUser = {
         id: 1,
-        full_name: 'Full Name',
-        email: 'email@email.net',
+        full_name: 'Admin',
+        email: 'admin@blog.net',
         password: 'qwerty',
     };
 
+    // const exampleUser = {
+    //     id: 2,
+    //     full_name: 'Example User',
+    //     email: 'example_user@blog.net',
+    //     password: 'qwerty',
+    // };
+
     beforeAll(async () => {
         const moduleFixture: TestingModule = await Test.createTestingModule({
-            imports: [TypeORMTestingModule([User]), UserModule],
+            imports: [TypeORMTestingModule([User]), UserModule, AuthModule],
         }).compile();
 
         app = moduleFixture.createNestApplication();
         app.useGlobalPipes(new ValidationPipe({whitelist: true, transform: true,}));
         await app.init();
     });
+
 
     it('/user (GET)', () => {
         return request(app.getHttpServer())
@@ -48,7 +60,8 @@ describe('UserController (e2e)', () => {
             .expect('');
     });
 
-    it('/user (POST)', () => {
+    it('/user (POST)', async () => {
+        accessToken = await registerTestUser(app, adminUser)
         return request(app.getHttpServer())
             .post('/user')
             .send({
@@ -56,6 +69,22 @@ describe('UserController (e2e)', () => {
                 email: '',
                 password: '',
             })
+            .expect(HttpStatus.UNAUTHORIZED)
+            .expect(({body}) => {
+                expect(body.message).toMatch('Unauthorized');
+                expect(body.statusCode).toEqual(HttpStatus.UNAUTHORIZED);
+            });
+    });
+
+    it('/user (POST)', async () => {
+        return request(app.getHttpServer())
+            .post('/user')
+            .send({
+                full_name: '',
+                email: '',
+                password: '',
+            })
+            .auth(accessToken, { type: "bearer" })
             .expect(HttpStatus.BAD_REQUEST)
             .expect(({body}) => {
                 expect(body.message).toEqual(expect.any(Array));
@@ -71,6 +100,7 @@ describe('UserController (e2e)', () => {
                 email: 'E-Mail',
                 password: 'password',
             })
+            .auth(accessToken, { type: "bearer" })
             .expect(HttpStatus.BAD_REQUEST)
             .expect(({body}) => {
                 expect(body.message).toEqual([ 'email must be an email' ] );
@@ -78,10 +108,45 @@ describe('UserController (e2e)', () => {
             });
     });
 
-    let updatedUser;
+    afterAll((done) => {
+        app.close();
+        done();
+    });
+});
+
+describe('UserController (e2e) User life cycle', () => {
+    let app: INestApplication;
+
+    const adminUser = {
+        id: 1,
+        full_name: 'Admin',
+        email: 'admin@blog.net',
+        password: 'qwerty',
+    };
+
+    const exampleUser = {
+        id: 2,
+        full_name: 'Example User',
+        email: 'example_user@blog.net',
+        password: 'qwerty',
+    };
+
+    beforeAll(async () => {
+        const moduleFixture: TestingModule = await Test.createTestingModule({
+            imports: [TypeORMTestingModule([User]), UserModule, AuthModule],
+        }).compile();
+
+        app = moduleFixture.createNestApplication();
+        app.useGlobalPipes(new ValidationPipe({whitelist: true, transform: true,}));
+        await app.init();
+    });
+
     it('/user (POST|PATCH) ', async () => {
+        const accessToken = await registerTestUser(app, adminUser);
+
         const createUserReq = await request(app.getHttpServer())
             .post('/user')
+            .auth(accessToken, { type: "bearer" })
             .send(exampleUser as CreateUserDto)
             .expect(HttpStatus.CREATED)
             .expect((res) => {
@@ -99,6 +164,7 @@ describe('UserController (e2e)', () => {
         const user = getOneUserReq.body
         await request(app.getHttpServer())
             .patch('/user/' + user.id)
+            .auth(accessToken, { type: "bearer" })
             .send({
                 email: 'email'
             })
@@ -111,6 +177,7 @@ describe('UserController (e2e)', () => {
         const newEmail: string = 'newEmail@email.new';
         const updateUserReq = await request(app.getHttpServer())
             .patch('/user/' + user.id)
+            .auth(accessToken, { type: "bearer" })
             .send({
                 full_name: newFullName,
                 email: newEmail,
@@ -120,13 +187,13 @@ describe('UserController (e2e)', () => {
                 expect(res.body.full_name).toMatch(newFullName);
             });
 
-        updatedUser = updateUserReq.body;
+        let updatedUser = updateUserReq.body;
         const getUpdatedUserReq = await request(app.getHttpServer())
             .get('/user/' + updatedUser.id)
             .expect(HttpStatus.OK)
             .expect((res) => {
                 expect(res.body).toEqual({
-                    id: 1,
+                    id: updatedUser.id,
                     full_name: newFullName,
                     email: newEmail,
                     password: 'qwerty',
@@ -135,42 +202,42 @@ describe('UserController (e2e)', () => {
 
         updatedUser = getUpdatedUserReq.body;
 
-        return getUpdatedUserReq;
-    });
-
-    it('/user (POST)', () => {
-        return request(app.getHttpServer())
+        request(app.getHttpServer())
             .post('/user')
             .send(updatedUser as CreateUserDto)
-            // .expect(HttpStatus.BAD_REQUEST)
-            .expect(({status, body}) => {
-                console.log(status, body)
-                expect(body.message).toMatch('Account with this email already exists.');
+            .auth(accessToken, { type: "bearer" })
+            .expect(HttpStatus.BAD_REQUEST)
+            .expect(({body}) => {
+                expect(body.message).toEqual(expect.any(Array));
+                expect(body.message[0]).toMatch('Account with this email already exists.');
+                expect(body.statusCode).toEqual(400);
             });
-    });
 
-    it('/user (DELETE)', () => {
-        return request(app.getHttpServer())
+        request(app.getHttpServer())
             .delete('/user/' + 99999)
             .send(updatedUser as CreateUserDto)
-            .expect(HttpStatus.NOT_FOUND)
-    });
+            .expect(HttpStatus.UNAUTHORIZED);
 
-    it('/user (DELETE)', () => {
-        return request(app.getHttpServer())
-            .delete('/user/' + updatedUser.id)
+        request(app.getHttpServer())
+            .delete('/user/' + 99999)
+            .auth(accessToken, { type: "bearer" })
             .send(updatedUser as CreateUserDto)
-            .expect(HttpStatus.CREATED)
-    });
+            .expect(HttpStatus.UNAUTHORIZED);
 
-    it('/user (DELETE)', () => {
-        return request(app.getHttpServer())
+        request(app.getHttpServer())
+            .delete('/user/' + updatedUser.id)
+            .auth(accessToken, { type: "bearer" })
+            .send(updatedUser as CreateUserDto)
+            .expect(HttpStatus.CREATED);
+
+        request(app.getHttpServer())
             .delete('/user/' + 'qwerty')
+            .auth(accessToken, { type: "bearer" })
             .send(updatedUser as CreateUserDto)
             .expect(HttpStatus.BAD_REQUEST)
             .expect(({body}) => {
                 expect(body.message).toMatch('Validation failed (numeric string is expected)')
-            })
+            });
     });
 
 

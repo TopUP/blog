@@ -35,3 +35,4 @@ lerna-debug.log*
 !.vscode/extensions.json
 
 .env
+/test/test_blog.db3

@@ -1,7 +1,7 @@
 // import { ConfigModule } from '@nestjs/config';
 // import * as process from 'process';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { TypeOrmModuleOptions } from '@nestjs/typeorm/dist/interfaces/typeorm-options.interface';
+import {TypeOrmModule} from '@nestjs/typeorm';
+import {TypeOrmModuleOptions} from '@nestjs/typeorm/dist/interfaces/typeorm-options.interface';
 // import { getConnection } from 'typeorm';
 import {INestApplication} from "@nestjs/common";
 import * as request from "supertest";
@@ -26,6 +26,7 @@ export const TypeORMTestingModule = (entities: any[]) => {
         // password    : process.env.DATABASE_PASSWORD || 'root',
         // database: './test/test_blog',
         database: ':memory:',
+        // autoLoadEntities: true,
         entities: [...entities],
         synchronize: true,
     };
@@ -33,7 +34,10 @@ export const TypeORMTestingModule = (entities: any[]) => {
     return TypeOrmModule.forRoot(config);
 };
 
-export async function registerTestUser(app: INestApplication, user: {email: string, password: string}): Promise<string> {
+export async function registerTestUser(app: INestApplication, user: {
+    email: string,
+    password: string
+}): Promise<string> {
     const registerReq = await request(app.getHttpServer())
         .post('/auth/register')
         .send({password_confirmation: user.password, ...user} as RegisterUserDto);
@@ -41,7 +45,7 @@ export async function registerTestUser(app: INestApplication, user: {email: stri
     return registerReq.body.access_token;
 }
 
-export async function authTestUser(app: INestApplication, user: {email: string, password: string}): Promise<string> {
+export async function authTestUser(app: INestApplication, user: { email: string, password: string }): Promise<string> {
     const accessTokenReq = await request(app.getHttpServer())
         .post('/auth/login')
         .send({

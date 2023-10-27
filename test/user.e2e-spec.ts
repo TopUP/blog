@@ -1,12 +1,40 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { HttpStatus, INestApplication, ValidationPipe } from '@nestjs/common';
+import {Test, TestingModule} from '@nestjs/testing';
+import {HttpStatus, INestApplication, ValidationPipe} from '@nestjs/common';
 import * as request from 'supertest';
+
 import {registerTestUser, TypeORMTestingModule} from 'src/utils/test/helpers';
-import { User }                 from 'src/user/entities/user.entity';
-import { UserModule }           from 'src/user/user.module';
-import { CreateUserDto }        from 'src/user/dto/create-user.dto';
-import {AuthModule}             from "../src/auth/auth.module";
-import {RegisterUserDto} from "../src/auth/dto/register-user.dto";
+
+import {AuthModule} from "src/auth/auth.module";
+
+import {UserModule} from 'src/user/user.module';
+import {User} from 'src/user/entities/user.entity';
+import {CreateUserDto} from 'src/user/dto/create-user.dto';
+
+import {PostModule} from "src/post/post.module";
+import {Post} from "src/post/entities/post.entity";
+
+import {CommentModule} from "src/comment/comment.module";
+import {Comment} from "src/comment/entities/comment.entity";
+
+import {CategoryModule} from "src/category/category.module";
+import {Category} from "src/category/entities/category.entity";
+
+const testingModuleMetadata = {
+    imports: [
+        TypeORMTestingModule([
+            User,
+            Post,
+            Category,
+            Comment
+        ]),
+
+        UserModule,
+        AuthModule,
+        PostModule,
+        CategoryModule,
+        CommentModule
+    ],
+}
 
 describe('UserController (e2e) User exceptions', () => {
     let app: INestApplication;
@@ -27,9 +55,7 @@ describe('UserController (e2e) User exceptions', () => {
     // };
 
     beforeAll(async () => {
-        const moduleFixture: TestingModule = await Test.createTestingModule({
-            imports: [TypeORMTestingModule([User]), UserModule, AuthModule],
-        }).compile();
+        const moduleFixture: TestingModule = await Test.createTestingModule(testingModuleMetadata).compile();
 
         app = moduleFixture.createNestApplication();
         app.useGlobalPipes(new ValidationPipe({whitelist: true, transform: true,}));
@@ -84,7 +110,7 @@ describe('UserController (e2e) User exceptions', () => {
                 email: '',
                 password: '',
             })
-            .auth(accessToken, { type: "bearer" })
+            .auth(accessToken, {type: "bearer"})
             .expect(HttpStatus.BAD_REQUEST)
             .expect(({body}) => {
                 expect(body.message).toEqual(expect.any(Array));
@@ -100,10 +126,10 @@ describe('UserController (e2e) User exceptions', () => {
                 email: 'E-Mail',
                 password: 'password',
             })
-            .auth(accessToken, { type: "bearer" })
+            .auth(accessToken, {type: "bearer"})
             .expect(HttpStatus.BAD_REQUEST)
             .expect(({body}) => {
-                expect(body.message).toEqual([ 'email must be an email' ] );
+                expect(body.message).toEqual(['email must be an email']);
                 expect(body.statusCode).toEqual(400);
             });
     });
@@ -132,9 +158,7 @@ describe('UserController (e2e) User life cycle', () => {
     };
 
     beforeAll(async () => {
-        const moduleFixture: TestingModule = await Test.createTestingModule({
-            imports: [TypeORMTestingModule([User]), UserModule, AuthModule],
-        }).compile();
+        const moduleFixture: TestingModule = await Test.createTestingModule(testingModuleMetadata).compile();
 
         app = moduleFixture.createNestApplication();
         app.useGlobalPipes(new ValidationPipe({whitelist: true, transform: true,}));
@@ -146,7 +170,7 @@ describe('UserController (e2e) User life cycle', () => {
 
         const createUserReq = await request(app.getHttpServer())
             .post('/user')
-            .auth(accessToken, { type: "bearer" })
+            .auth(accessToken, {type: "bearer"})
             .send(exampleUser as CreateUserDto)
             .expect(HttpStatus.CREATED)
             .expect((res) => {
@@ -164,20 +188,20 @@ describe('UserController (e2e) User life cycle', () => {
         const user = getOneUserReq.body
         await request(app.getHttpServer())
             .patch('/user/' + user.id)
-            .auth(accessToken, { type: "bearer" })
+            .auth(accessToken, {type: "bearer"})
             .send({
                 email: 'email'
             })
             .expect(HttpStatus.BAD_REQUEST)
             .expect((res) => {
-                expect(res.body.message).toEqual([ 'email must be an email' ]);
+                expect(res.body.message).toEqual(['email must be an email']);
             });
 
         const newFullName: string = 'New Full Name';
         const newEmail: string = 'newEmail@email.new';
         const updateUserReq = await request(app.getHttpServer())
             .patch('/user/' + user.id)
-            .auth(accessToken, { type: "bearer" })
+            .auth(accessToken, {type: "bearer"})
             .send({
                 full_name: newFullName,
                 email: newEmail,
@@ -205,7 +229,7 @@ describe('UserController (e2e) User life cycle', () => {
         request(app.getHttpServer())
             .post('/user')
             .send(updatedUser as CreateUserDto)
-            .auth(accessToken, { type: "bearer" })
+            .auth(accessToken, {type: "bearer"})
             .expect(HttpStatus.BAD_REQUEST)
             .expect(({body}) => {
                 expect(body.message).toEqual(expect.any(Array));
@@ -220,19 +244,19 @@ describe('UserController (e2e) User life cycle', () => {
 
         request(app.getHttpServer())
             .delete('/user/' + 99999)
-            .auth(accessToken, { type: "bearer" })
+            .auth(accessToken, {type: "bearer"})
             .send(updatedUser as CreateUserDto)
             .expect(HttpStatus.UNAUTHORIZED);
 
         request(app.getHttpServer())
             .delete('/user/' + updatedUser.id)
-            .auth(accessToken, { type: "bearer" })
+            .auth(accessToken, {type: "bearer"})
             .send(updatedUser as CreateUserDto)
             .expect(HttpStatus.CREATED);
 
         request(app.getHttpServer())
             .delete('/user/' + 'qwerty')
-            .auth(accessToken, { type: "bearer" })
+            .auth(accessToken, {type: "bearer"})
             .send(updatedUser as CreateUserDto)
             .expect(HttpStatus.BAD_REQUEST)
             .expect(({body}) => {

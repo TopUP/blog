@@ -1,17 +1,42 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { HttpStatus, INestApplication, ValidationPipe } from '@nestjs/common';
+import {Test, TestingModule} from '@nestjs/testing';
+import {HttpStatus, INestApplication, ValidationPipe} from '@nestjs/common';
 import * as request from 'supertest';
-import {AuthModule} from "src/auth/auth.module";
+
 import {TypeORMTestingModule} from "src/utils/test/helpers";
+
+import {AuthModule} from "src/auth/auth.module";
+import {RegisterUserDto} from "src/auth/dto/register-user.dto";
+
+import {UserModule} from "src/user/user.module";
 import {User} from "src/user/entities/user.entity";
-import {RegisterUserDto} from "../src/auth/dto/register-user.dto";
+
+import {PostModule} from "src/post/post.module";
+import {Post} from "src/post/entities/post.entity";
+
+import {CategoryModule} from "src/category/category.module";
+import {Category} from "src/category/entities/category.entity";
+
+import {CommentModule} from "src/comment/comment.module";
+import {Comment} from "src/comment/entities/comment.entity";
 
 describe('AuthController (e2e)', () => {
     let app: INestApplication;
 
     beforeAll(async () => {
         const moduleFixture: TestingModule = await Test.createTestingModule({
-            imports: [TypeORMTestingModule([User]), AuthModule],
+            imports: [TypeORMTestingModule([
+                User,
+                Post,
+                Category,
+                Comment,
+            ]),
+
+                AuthModule,
+                UserModule,
+                PostModule,
+                CategoryModule,
+                CommentModule,
+            ],
         }).compile();
 
         app = moduleFixture.createNestApplication();
@@ -22,7 +47,7 @@ describe('AuthController (e2e)', () => {
     it('/auth/register | /auth/login (POST) - BAD REQUESTS', () => {
         request(app.getHttpServer())
             .post('/auth/register')
-            .send({ })
+            .send({})
             .expect(HttpStatus.BAD_REQUEST)
             .expect(({body}) => {
                 expect(body.message).toEqual(expect.any(Array));

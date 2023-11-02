@@ -1,6 +1,6 @@
 import * as process from "process";
 import * as bcrypt from 'bcrypt';
-import {BadRequestException, Injectable} from '@nestjs/common';
+import {Injectable} from '@nestjs/common';
 import {InjectRepository} from "@nestjs/typeorm";
 import {Repository} from "typeorm";
 import {JwtService} from '@nestjs/jwt';

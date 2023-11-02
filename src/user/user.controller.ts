@@ -8,7 +8,9 @@ import {
     Delete,
     HttpStatus,
     Res,
-    ParseIntPipe, UseGuards,
+    ParseIntPipe,
+    UseGuards,
+    Request, NotFoundException, ForbiddenException,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -33,9 +35,10 @@ export class UserController {
     @ApiResponse({ status: HttpStatus.OK, description: 'Success', type: User })
     @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Bad Request' })
     @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Unauthorized.' })
-    @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Forbidden.' })
     async create(@Body() createUserDto: CreateUserDto) {
-        return await this.userService.create(createUserDto).catch(emailAlreadyExistsHandler);
+        return await this.userService
+            .create(createUserDto)
+            .catch(emailAlreadyExistsHandler);
     }
 
     @Get()
@@ -47,17 +50,17 @@ export class UserController {
 
     @Get(':id')
     @ApiOperation({ summary: 'Одиночный пользователей' })
+    @ApiParam({ name: 'id', required: true, description: 'ID пользователя' })
     @ApiResponse({ status: HttpStatus.OK, description: 'Success', type: [User] })
     @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Bad Request' })
     @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Not found' })
-    async findOne(@Param('id', ParseIntPipe) id: number, @Res() res) {
+    async findOne(@Param('id', ParseIntPipe) id: number) {
         const user = await this.userService.findOne(+id);
-
         if (!user) {
-            return res.status(HttpStatus.NOT_FOUND).send();
+            throw new NotFoundException;
         }
 
-        return res.json(user);
+        return user;
     }
 
     @UseGuards(AuthGuard('jwt'))
@@ -72,26 +75,37 @@ export class UserController {
     @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Unauthorized.' })
     @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Forbidden.' })
     @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Not found' })
-    async update(@Param('id', ParseIntPipe) id: string, @Body() updateUserDto: UpdateUserDto, @Res() res) {
-        if (!(await this.userService.findOne(+id))) {
-            return res.status(HttpStatus.NOT_FOUND).send();
+    async update(@Param('id', ParseIntPipe) id: string, @Body() updateUserDto: UpdateUserDto, @Request() req) {
+        const user = await this.userService.findOne(+id);
+        if (!user) {
+            throw new NotFoundException;
         }
 
-        const user = await this.userService.update(+id, updateUserDto).catch(emailAlreadyExistsHandler)
+        if (user.id != req.user.id) {
+            throw new ForbiddenException;
+        }
 
-        return res.json(user);
+        return await this.userService
+            .update(+id, updateUserDto)
+            .catch(emailAlreadyExistsHandler);
     }
 
     @UseGuards(AuthGuard('jwt'))
     @Delete(':id')
+    @ApiOperation({ summary: 'Удаление пользователя' })
     @ApiParam({ name: 'id', required: true, description: 'ID' })
-    @ApiResponse({ status: HttpStatus.CREATED, description: 'Deleted', type: User })
+    @ApiResponse({ status: HttpStatus.CREATED, description: 'Deleted' })
     @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Unauthorized.' })
     @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Forbidden.' })
-    @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Success', type: User })
-    async remove(@Param('id', ParseIntPipe) id: string, @Res() res) {
-        if (!(await this.userService.findOne(+id))) {
-            return res.status(HttpStatus.NOT_FOUND).send();
+    @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Not found' })
+    async remove(@Param('id', ParseIntPipe) id: string, @Request() req, @Res() res) {
+        const user = await this.userService.findOne(+id);
+        if (!user) {
+            throw new NotFoundException;
+        }
+
+        if (user.id != req.user.id) {
+            throw new ForbiddenException;
         }
 
         await this.userService.remove(+id);

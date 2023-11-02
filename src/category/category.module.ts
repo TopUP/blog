@@ -9,24 +9,7 @@ import {Category} from "./entities/category.entity";
 import {extname} from "path";
 
 @Module({
-    imports: [
-        TypeOrmModule.forFeature([Category]),
-
-        MulterModule.register({
-            storage: diskStorage({
-                destination: function (req, file, cb) {
-                    cb(null, './uploads/category_images')
-                },
-                filename: function (req, file, cb) {
-                    console.log(file);
-                    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9)
-                    const fileExtName = extname(file.originalname);
-                    cb(null, file.fieldname + '-' + uniqueSuffix + fileExtName);
-                }
-            }),
-            preservePath: true,
-        }),
-    ],
+    imports: [TypeOrmModule.forFeature([Category]),],
     controllers: [CategoryController],
     providers: [CategoryService, MulterModule],
 })

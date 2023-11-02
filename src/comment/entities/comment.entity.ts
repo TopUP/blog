@@ -8,16 +8,26 @@ import {Post} from "../../post/entities/post.entity";
 @Entity()
 export class Comment {
     @PrimaryGeneratedColumn()
-    @ApiProperty() id: number;
+    @ApiProperty({description: 'ID комментария', nullable: false})
+    id: number;
 
-    @ManyToOne(() => User, (user) => user.posts, {eager: true})
-    @ApiProperty({type: () => User})
+    @ManyToOne(() => User, (user) => user.comments)
+    @ApiProperty({type: () => User, description: 'Владелец комментария', nullable: false})
     user: User
 
-    @ManyToOne(() => Post, (post) => post.comments, {eager: true})
-    @ApiProperty({type: () => Post})
+    @ManyToOne(() => Post, (post) => post.comments)
+    @ApiProperty({type: () => Post, description: 'Пост комментария',     nullable: false})
     post: Post
 
     @Column()
-    @ApiProperty() body: string;
+    @ApiProperty({description: 'Текст комментария', nullable: false})
+    body: string;
+
+    @Column()
+    @ApiProperty({description: 'ID поста комментария', nullable: false})
+    postId: number;
+
+    @Column()
+    @ApiProperty({description: 'ID владельца комментария', nullable: false})
+    userId: number;
 }

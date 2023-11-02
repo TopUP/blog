@@ -1,4 +1,3 @@
-import {extname} from 'path';
 import {
     Controller,
     Get,
@@ -8,118 +7,84 @@ import {
     Param,
     Delete,
     HttpStatus,
-    UseInterceptors,
-    UploadedFile,
-    ParseFilePipeBuilder,
-    // HttpException,
+    UseGuards,
+    ParseIntPipe,
+    NotFoundException, Res,
 } from '@nestjs/common';
-import {ApiOperation, ApiQuery, ApiResponse, ApiTags} from "@nestjs/swagger";
+import {ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags} from "@nestjs/swagger";
 
 import {CategoryService} from './category.service';
 import {CreateCategoryDto} from './dto/create-category.dto';
 import {UpdateCategoryDto} from './dto/update-category.dto';
 import {Category} from "./entities/category.entity";
-import {FileInterceptor} from "@nestjs/platform-express";
-
-// import {diskStorage}         from "multer";
+import {AuthGuard} from "@nestjs/passport";
 
 @ApiTags('Category')
 @Controller('category')
 export class CategoryController {
-    constructor(private readonly categoryService: CategoryService) {
-    }
+    constructor(private readonly categoryService: CategoryService) {  }
 
+    @UseGuards(AuthGuard('jwt'))
     @Post()
     @ApiOperation({summary: 'Создание новой категории'})
     @ApiQuery({name: 'title', required: true, description: 'Название категории'})
     @ApiResponse({status: HttpStatus.OK, description: 'Success', type: Category})
     @ApiResponse({status: HttpStatus.BAD_REQUEST, description: 'Bad Request'})
+    @ApiResponse({status: HttpStatus.UNAUTHORIZED, description: 'Unauthorized'})
     create(@Body() createCategoryDto: CreateCategoryDto) {
         return this.categoryService.create(createCategoryDto);
     }
 
     @Get()
-    @ApiOperation({summary: 'Возвращает все категории'})
+    @ApiOperation({summary: 'Список категорий'})
     @ApiResponse({status: HttpStatus.OK, description: 'Success', type: [Category], isArray: true,})
-    @ApiResponse({status: HttpStatus.BAD_REQUEST, description: 'Bad Request'})
     findAll() {
         return this.categoryService.findAll();
     }
 
     @Get(':id')
-    @ApiOperation({summary: 'Возвращает одну категорию'})
-    @ApiQuery({name: 'id', required: true, description: 'ID категории'})
-    @ApiResponse({status: HttpStatus.OK, description: 'Success', type: Category, isArray: true,})
+    @ApiOperation({summary: 'Одиночная категория'})
+    @ApiParam({name: 'id', required: true, description: 'ID категории'})
+    @ApiResponse({status: HttpStatus.OK, description: 'Success', type: Category})
     @ApiResponse({status: HttpStatus.BAD_REQUEST, description: 'Bad Request'})
-    findOne(@Param('id') id: string) {
-        return this.categoryService.findOne(+id);
+    async findOne(@Param('id', ParseIntPipe) id: string) {
+        const category = await this.categoryService.findOne(+id);
+        if (!category) {
+            throw new NotFoundException;
+        }
+
+        return category;
     }
 
+    @UseGuards(AuthGuard('jwt'))
     @Patch(':id')
-    update(@Param('id') id: string, @Body() updateCategoryDto: UpdateCategoryDto) {
-        return this.categoryService.update(+id, updateCategoryDto);
+    @ApiOperation({summary: 'Изменение категории'})
+    @ApiParam({name: 'id', required: true, description: 'ID категории'})
+    @ApiResponse({status: HttpStatus.BAD_REQUEST, description: 'Bad Request'})
+    @ApiResponse({status: HttpStatus.UNAUTHORIZED, description: 'Unauthorized'})
+    async update(@Param('id', ParseIntPipe) id: string, @Body() updateCategoryDto: UpdateCategoryDto) {
+        const category = await this.categoryService.findOne(+id);
+        if (!category) {
+            throw new NotFoundException;
+        }
+
+        return await this.categoryService.update(+id, updateCategoryDto);
     }
 
+    @UseGuards(AuthGuard('jwt'))
     @Delete(':id')
-    @ApiOperation({summary: 'Удаляет категорию'})
-    @ApiQuery({name: 'id', required: true, description: 'ID категории'})
+    @ApiOperation({summary: 'Удаление категории'})
+    @ApiParam({name: 'id', required: true, description: 'ID категории'})
     @ApiResponse({status: HttpStatus.OK, description: 'Success'})
     @ApiResponse({status: HttpStatus.BAD_REQUEST, description: 'Bad Request'})
-    remove(@Param('id') id: string) {
-        return this.categoryService.remove(+id);
+    @ApiResponse({status: HttpStatus.UNAUTHORIZED, description: 'Unauthorized'})
+    async remove(@Param('id', ParseIntPipe) id: string, @Res() res) {
+        const category = await this.categoryService.findOne(+id);
+        if (!category) {
+            throw new NotFoundException;
+        }
+
+        await this.categoryService.remove(+id);
+        return res.status(HttpStatus.CREATED).send();
     }
-
-
-    @Post(':id/upload-image')
-    @UseInterceptors(FileInterceptor(
-        'image',
-        // {
-        //     storage: diskStorage({
-        //         destination: './uploads',
-        //         filename: (req, file, callback) => {
-        //             const name = file.originalname.split('.')[0];
-        //             const fileExtName = extname(file.originalname);
-        //             const randomName = Array(4)
-        //                 .fill(null)
-        //                 .map(() => Math.round(Math.random() * 10).toString(10))
-        //                 .join('');
-        //             callback(null, `${name}${randomName}${fileExtName}`);
-        //         },
-        //     }),
-        //     fileFilter: (req, file, callback) => {
-        //         if (!file.originalname.match(/\.(jpg|jpeg|png|gif)$/)) {
-        //             return callback(
-        //                 new HttpException(
-        //                     'Only image files are allowed!',
-        //                     HttpStatus.BAD_REQUEST,
-        //                 ),
-        //                 false,
-        //             );
-        //         }
-        //         callback(null, true);
-        //     },
-        // }
-    ))
-    uploadImage(
-        @Param('id') id: string,
-        @UploadedFile(
-            new ParseFilePipeBuilder()
-                .addFileTypeValidator({
-                    fileType: 'jpeg|gif',
-                })
-                .addMaxSizeValidator({
-                    maxSize: 1000000
-                })
-                .build({
-                    errorHttpStatusCode: HttpStatus.UNPROCESSABLE_ENTITY
-                }),
-        ) image: Express.Multer.File
-    ) {
-        const updateDto = new UpdateCategoryDto();
-        updateDto.image = image.filename
-        this.categoryService.update(+id, updateDto);
-
-        return {image, updateDto};
-    }
-
 }

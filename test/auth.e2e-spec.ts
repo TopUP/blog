@@ -86,10 +86,8 @@ describe('AuthController (e2e)', () => {
         request(app.getHttpServer())
             .post('/auth/login')
             .send({
-                full_name: 'FullName',
                 email: 'email@email.net',
                 password: 'password',
-                password_confirmation: 'bad password',
             } as RegisterUserDto)
             .expect(HttpStatus.UNAUTHORIZED);
     });

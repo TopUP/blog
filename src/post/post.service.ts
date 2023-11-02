@@ -21,20 +21,15 @@ export class PostService {
     let posts = await this.repository.find();
 
     posts.forEach((post: Post) => {
-      delete(post.user.password);
+      delete(post?.user.password);
     });
 
     return posts;
   }
 
-  async findAllByUserId(userId: number) {
-    return await this.repository.findBy({userId});
-  }
-
   async findOne(id: number) {
     let post = await this.repository.findOneBy({ id });
-
-    delete(post.user.password);
+    delete(post?.user.password);
 
     return post;
   }

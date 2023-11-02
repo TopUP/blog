@@ -1,5 +1,5 @@
 import {ApiProperty, ApiTags} from '@nestjs/swagger';
-import { IsNotEmpty, IsString } from 'class-validator';
+import {IsNotEmpty, IsNumber, IsString} from 'class-validator';
 
 import { User } from '../../user/entities/user.entity';
 import { Post } from '../../post/entities/post.entity';
@@ -11,6 +11,11 @@ export class CreateCommentDto {
 
     @ApiProperty({ description: 'Пост комментария',     nullable: false })
     post: Post;
+
+    @ApiProperty({ description: 'ID поста комментария',    nullable: false })
+    @IsNotEmpty()
+    @IsNumber()
+    postId: number;
 
     @ApiProperty({ description: 'Текст комментария',    nullable: false })
     @IsNotEmpty()

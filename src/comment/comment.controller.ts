@@ -1,37 +1,132 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
-import {ApiTags} from "@nestjs/swagger";
+import {
+    Controller,
+    Get,
+    Post,
+    Body,
+    Patch,
+    Param,
+    Delete,
+    UseGuards,
+    HttpStatus,
+    Req,
+    BadRequestException, ForbiddenException, NotFoundException, Res, ParseIntPipe
+} from '@nestjs/common';
+import {ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags} from "@nestjs/swagger";
 
 import { CommentService }  from './comment.service';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { UpdateCommentDto } from './dto/update-comment.dto';
+import { Comment } from './entities/comment.entity';
+import {AuthGuard} from "@nestjs/passport";
+import {Post as PostEntity} from "../post/entities/post.entity";
+import {PostService} from "../post/post.service";
+import {UserService} from "../user/user.service";
 
 @ApiTags('Comment')
 @Controller('comment')
 export class CommentController {
-  constructor(private readonly commentService: CommentService) {}
+    constructor(
+        private readonly commentService: CommentService,
+        private readonly postService: PostService,
+        private readonly userService: UserService,
+    ) {}
 
-  @Post()
-  create(@Body() createCommentDto: CreateCommentDto) {
-    return this.commentService.create(createCommentDto);
-  }
+    @UseGuards(AuthGuard('jwt'))
+    @Post()
+    @ApiOperation({summary: 'Создание комментария'})
+    @ApiQuery({ name: 'postId', required: true, description: 'ID категории' })
+    @ApiQuery({ name: 'body', required: true, description: 'Тело поста' })
+    @ApiResponse({ status: HttpStatus.CREATED, description: 'Success', type: PostEntity })
+    @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Bad Request' })
+    @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Unauthorized.' })
+    async create(@Body() createCommentDto: CreateCommentDto, @Req() req) {
+        createCommentDto.user = await this.userService.findOne(req.user.id);
+        createCommentDto.post = await this.postService.findOne(createCommentDto.postId);
+        if (!createCommentDto.post) {
+            throw new BadRequestException({
+                "message": ["Post not found",],
+                "error": "Bad Request",
+                "statusCode": 400
+            })
+        }
 
-  @Get()
-  findAll() {
-    return this.commentService.findAll();
-  }
+        return this.commentService.create(createCommentDto);
+    }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.commentService.findOne(+id);
-  }
+    @Get()
+    @ApiOperation({summary: 'Список комментариев'})
+    @ApiResponse({ status: HttpStatus.OK, description: 'Success', type: [Comment], isArray: true })
+    findAll() {
+        return this.commentService.findAll();
+    }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateCommentDto: UpdateCommentDto) {
-    return this.commentService.update(+id, updateCommentDto);
-  }
+    @Get(':id')
+    @ApiOperation({summary: 'Одиночный комментарий'})
+    @ApiParam({ name: 'id', required: true, description: 'ID комментария' })
+    @ApiResponse({ status: HttpStatus.OK, description: 'Success', type: [Comment], isArray: true })
+    @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Bad Request' })
+    @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Not found' })
+    async findOne(@Param('id', ParseIntPipe) id: string) {
+        var comment = await this.commentService.findOne(+id);
+        if (!comment) {
+            throw new NotFoundException;
+        }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.commentService.remove(+id);
-  }
+        return comment;
+    }
+
+    @UseGuards(AuthGuard('jwt'))
+    @Patch(':id')
+    @ApiOperation({summary: 'Изменение комментария'})
+    @ApiParam({ name: 'id', required: true, description: 'ID комментария' })
+    @ApiQuery({ name: 'body', required: true, description: 'Тело поста' })
+    @ApiResponse({ status: HttpStatus.OK, description: 'Success', type: Comment })
+    @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Bad Request' })
+    @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Unauthorized.' })
+    @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Forbidden.' })
+    @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Not found' })
+    async update(@Param('id', ParseIntPipe) id: string, @Body() updateCommentDto: UpdateCommentDto, @Req() req) {
+        var comment = await this.commentService.findOne(+id);
+        if (!comment) {
+            throw new NotFoundException;
+        }
+
+        const commentPost = await this.postService.findOne(comment.postId);
+        if (!commentPost) {
+            throw new BadRequestException({
+                "message": ["Post not found",],
+                "error": "Bad Request",
+                "statusCode": 400
+            })
+        }
+
+        if (comment.userId != req.user.id) {
+            throw new ForbiddenException;
+        }
+
+        return this.commentService.update(+id, { body: updateCommentDto.body } as UpdateCommentDto);
+    }
+
+    @UseGuards(AuthGuard('jwt'))
+    @Delete(':id')
+    @ApiOperation({summary: 'Удаление комментария'})
+    @ApiParam({ name: 'id', required: true, description: 'ID комментария' })
+    @ApiResponse({ status: HttpStatus.CREATED, description: 'Success' })
+    @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Bad Request' })
+    @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Unauthorized.' })
+    @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Forbidden.' })
+    @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Not found' })
+    async remove(@Param('id', ParseIntPipe) id: string, @Req() req, @Res() res) {
+        var comment = await this.commentService.findOne(+id);
+        if (!comment) {
+            throw new NotFoundException;
+        }
+
+        if (comment.userId != req.user.id) {
+            throw new ForbiddenException;
+        }
+
+        await this.commentService.remove(+id);
+        return res.status(HttpStatus.CREATED).send();
+    }
 }

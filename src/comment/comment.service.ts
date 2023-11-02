@@ -8,28 +8,28 @@ import { Comment }          from "./entities/comment.entity";
 
 @Injectable()
 export class CommentService {
-  constructor(
-      @InjectRepository(Comment)
-      private repository: Repository<Comment>,
-  ) {}
+    constructor(
+        @InjectRepository(Comment)
+        private repository: Repository<Comment>,
+    ) {}
 
-  create(createCommentDto: CreateCommentDto) {
-    return this.repository.save({ ...createCommentDto });
-  }
+    create(createCommentDto: CreateCommentDto) {
+        return this.repository.save({ ...createCommentDto });
+    }
 
-  findAll() {
-    return this.repository.find();
-  }
+    findAll() {
+        return this.repository.find();
+    }
 
-  findOne(id: number) {
-    return this.repository.findOneBy({ id });
-  }
+    async findOne(id: number) {
+        return this.repository.findOneBy({ id });
+    }
 
-  update(id: number, updateCommentDto: UpdateCommentDto) {
-    return this.repository.save({ ...updateCommentDto, id });
-  }
+    update(id: number, updateCommentDto: UpdateCommentDto) {
+        return this.repository.save({ ...updateCommentDto, id });
+    }
 
-  async remove(id: number) {
-    await this.repository.delete(id);
-  }
+    async remove(id: number) {
+        await this.repository.delete(id);
+    }
 }

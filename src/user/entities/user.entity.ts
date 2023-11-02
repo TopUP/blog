@@ -24,10 +24,10 @@ export class User {
     password: string;
 
     @OneToMany(() => Post, (post) => post.user)
-    @ApiProperty({type: () => [Post]})
+    @ApiProperty({type: () => [Post], description: 'Посты пользователя', nullable: false, isArray: true})
     posts: Post[]
 
-
-    @OneToMany(() => Comment, comment => comment.user)
-    @ApiProperty({type: () => [Comment]}) comments: Comment[]
+    @OneToMany(() => Comment, (comment) => comment.user)
+    @ApiProperty({type: () => [Comment]})
+    comments: Comment[]
 }

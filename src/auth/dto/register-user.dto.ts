@@ -5,20 +5,20 @@ export class RegisterUserDto {
     @ApiProperty({ description: 'Имя пользователя', nullable: false })
     @IsNotEmpty()
     @IsString()
-    full_name   : string;
+    full_name: string;
 
-    @ApiProperty({ description: 'Электронная почта пользователя', nullable: false, })
+    @ApiProperty({ description: 'Электронная почта пользователя', nullable: false })
     @IsNotEmpty()
     @IsEmail()
-    email       : string;
+    email: string;
 
     @ApiProperty({ description: 'Пароль пользователя', nullable: false })
     @IsNotEmpty()
     @IsAlphanumeric()
-    password    : string;
+    password: string;
 
     @ApiProperty({ description: 'Повтор пароля пользователя', nullable: false })
     @IsNotEmpty()
     @IsAlphanumeric()
-    password_confirmation    : string;
+    password_confirmation: string;
 }

@@ -9,18 +9,22 @@ import {
     UseGuards,
     HttpStatus,
     Req,
-    BadRequestException, ForbiddenException, NotFoundException, Res, ParseIntPipe
+    BadRequestException,
+    ForbiddenException,
+    NotFoundException,
+    Res,
+    ParseIntPipe,
 } from '@nestjs/common';
-import {ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags} from "@nestjs/swagger";
+import { ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 
-import { CommentService }  from './comment.service';
+import { CommentService } from './comment.service';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { UpdateCommentDto } from './dto/update-comment.dto';
 import { Comment } from './entities/comment.entity';
-import {AuthGuard} from "@nestjs/passport";
-import {Post as PostEntity} from "../post/entities/post.entity";
-import {PostService} from "../post/post.service";
-import {UserService} from "../user/user.service";
+import { AuthGuard } from '@nestjs/passport';
+import { Post as PostEntity } from '../post/entities/post.entity';
+import { PostService } from '../post/post.service';
+import { UserService } from '../user/user.service';
 
 @ApiTags('Comment')
 @Controller('comment')
@@ -33,7 +37,7 @@ export class CommentController {
 
     @UseGuards(AuthGuard('jwt'))
     @Post()
-    @ApiOperation({summary: 'Создание комментария'})
+    @ApiOperation({ summary: 'Создание комментария' })
     @ApiQuery({ name: 'postId', required: true, description: 'ID категории' })
     @ApiQuery({ name: 'body', required: true, description: 'Тело поста' })
     @ApiResponse({ status: HttpStatus.CREATED, description: 'Success', type: PostEntity })
@@ -44,24 +48,24 @@ export class CommentController {
         createCommentDto.post = await this.postService.findOne(createCommentDto.postId);
         if (!createCommentDto.post) {
             throw new BadRequestException({
-                "message": ["Post not found",],
-                "error": "Bad Request",
-                "statusCode": 400
-            })
+                message: ['Post not found'],
+                error: 'Bad Request',
+                statusCode: 400,
+            });
         }
 
         return this.commentService.create(createCommentDto);
     }
 
     @Get()
-    @ApiOperation({summary: 'Список комментариев'})
+    @ApiOperation({ summary: 'Список комментариев' })
     @ApiResponse({ status: HttpStatus.OK, description: 'Success', type: [Comment], isArray: true })
     findAll() {
         return this.commentService.findAll();
     }
 
     @Get(':id')
-    @ApiOperation({summary: 'Одиночный комментарий'})
+    @ApiOperation({ summary: 'Одиночный комментарий' })
     @ApiParam({ name: 'id', required: true, description: 'ID комментария' })
     @ApiResponse({ status: HttpStatus.OK, description: 'Success', type: [Comment], isArray: true })
     @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Bad Request' })
@@ -69,7 +73,7 @@ export class CommentController {
     async findOne(@Param('id', ParseIntPipe) id: string) {
         var comment = await this.commentService.findOne(+id);
         if (!comment) {
-            throw new NotFoundException;
+            throw new NotFoundException();
         }
 
         return comment;
@@ -77,7 +81,7 @@ export class CommentController {
 
     @UseGuards(AuthGuard('jwt'))
     @Patch(':id')
-    @ApiOperation({summary: 'Изменение комментария'})
+    @ApiOperation({ summary: 'Изменение комментария' })
     @ApiParam({ name: 'id', required: true, description: 'ID комментария' })
     @ApiQuery({ name: 'body', required: true, description: 'Тело поста' })
     @ApiResponse({ status: HttpStatus.OK, description: 'Success', type: Comment })
@@ -88,20 +92,20 @@ export class CommentController {
     async update(@Param('id', ParseIntPipe) id: string, @Body() updateCommentDto: UpdateCommentDto, @Req() req) {
         var comment = await this.commentService.findOne(+id);
         if (!comment) {
-            throw new NotFoundException;
+            throw new NotFoundException();
         }
 
         const commentPost = await this.postService.findOne(comment.postId);
         if (!commentPost) {
             throw new BadRequestException({
-                "message": ["Post not found",],
-                "error": "Bad Request",
-                "statusCode": 400
-            })
+                message: ['Post not found'],
+                error: 'Bad Request',
+                statusCode: 400,
+            });
         }
 
         if (comment.userId != req.user.id) {
-            throw new ForbiddenException;
+            throw new ForbiddenException();
         }
 
         return this.commentService.update(+id, { body: updateCommentDto.body } as UpdateCommentDto);
@@ -109,7 +113,7 @@ export class CommentController {
 
     @UseGuards(AuthGuard('jwt'))
     @Delete(':id')
-    @ApiOperation({summary: 'Удаление комментария'})
+    @ApiOperation({ summary: 'Удаление комментария' })
     @ApiParam({ name: 'id', required: true, description: 'ID комментария' })
     @ApiResponse({ status: HttpStatus.CREATED, description: 'Success' })
     @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Bad Request' })
@@ -119,11 +123,11 @@ export class CommentController {
     async remove(@Param('id', ParseIntPipe) id: string, @Req() req, @Res() res) {
         var comment = await this.commentService.findOne(+id);
         if (!comment) {
-            throw new NotFoundException;
+            throw new NotFoundException();
         }
 
         if (comment.userId != req.user.id) {
-            throw new ForbiddenException;
+            throw new ForbiddenException();
         }
 
         await this.commentService.remove(+id);

@@ -1,43 +1,38 @@
-import {Test, TestingModule} from '@nestjs/testing';
-import {HttpStatus, INestApplication, ValidationPipe} from '@nestjs/common';
+import { Test, TestingModule } from '@nestjs/testing';
+import { HttpStatus, INestApplication, ValidationPipe } from '@nestjs/common';
 import * as request from 'supertest';
 
-import {authTestUser, registerTestUser, TypeORMTestingModule} from 'src/utils/test/helpers';
+import { authTestUser, registerTestUser, TypeORMTestingModule } from 'src/utils/test/helpers';
 
-import {AuthModule} from "src/auth/auth.module";
+import { AuthModule } from 'src/auth/auth.module';
 
-import {UserModule} from 'src/user/user.module';
-import {User} from 'src/user/entities/user.entity';
-import {CreateUserDto} from 'src/user/dto/create-user.dto';
+import { UserModule } from 'src/user/user.module';
+import { User } from 'src/user/entities/user.entity';
+import { CreateUserDto } from 'src/user/dto/create-user.dto';
 
-import {PostModule} from "src/post/post.module";
-import {Post} from "src/post/entities/post.entity";
+import { PostModule } from 'src/post/post.module';
+import { Post } from 'src/post/entities/post.entity';
 
-import {CommentModule} from "src/comment/comment.module";
-import {Comment} from "src/comment/entities/comment.entity";
+import { CommentModule } from 'src/comment/comment.module';
+import { Comment } from 'src/comment/entities/comment.entity';
 
-import {CategoryModule} from "src/category/category.module";
-import {Category} from "src/category/entities/category.entity";
-import {ConfigModule} from "@nestjs/config";
+import { CategoryModule } from 'src/category/category.module';
+import { Category } from 'src/category/entities/category.entity';
+import { ConfigModule } from '@nestjs/config';
 
 const testingModuleMetadata = {
     imports: [
         ConfigModule.forRoot(),
 
-        TypeORMTestingModule([
-            User,
-            Post,
-            Category,
-            Comment
-        ]),
+        TypeORMTestingModule([User, Post, Category, Comment]),
 
         UserModule,
         AuthModule,
         PostModule,
         CategoryModule,
-        CommentModule
+        CommentModule,
     ],
-}
+};
 
 describe('UserController (e2e) User exceptions', () => {
     let app: INestApplication;
@@ -61,39 +56,35 @@ describe('UserController (e2e) User exceptions', () => {
         const moduleFixture: TestingModule = await Test.createTestingModule(testingModuleMetadata).compile();
 
         app = moduleFixture.createNestApplication();
-        app.useGlobalPipes(new ValidationPipe({whitelist: true, transform: true,}));
+        app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
         await app.init();
     });
 
-
     it('/user (GET)', () => {
-        return request(app.getHttpServer())
-            .get('/user')
-            .expect(HttpStatus.OK)
-            .expect([]);
+        return request(app.getHttpServer()).get('/user').expect(HttpStatus.OK).expect([]);
     });
 
     it('/user/:id (GET)', () => {
         return request(app.getHttpServer())
             .get('/user/' + 'qwerty')
             .expect(HttpStatus.BAD_REQUEST)
-            .expect(({body}) => {
-                expect(body.message).toMatch('Validation failed (numeric string is expected)')
-            })
+            .expect(({ body }) => {
+                expect(body.message).toMatch('Validation failed (numeric string is expected)');
+            });
     });
 
     it('/user/:id (GET)', () => {
         return request(app.getHttpServer())
             .get('/user/1')
             .expect(HttpStatus.NOT_FOUND)
-            .expect(({body}) => {
+            .expect(({ body }) => {
                 expect(body.message).toMatch('Not Found');
                 expect(body.statusCode).toEqual(HttpStatus.NOT_FOUND);
             });
     });
 
     it('/user (POST)', async () => {
-        accessToken = await registerTestUser(app, adminUser)
+        accessToken = await registerTestUser(app, adminUser);
         return request(app.getHttpServer())
             .post('/user')
             .send({
@@ -102,7 +93,7 @@ describe('UserController (e2e) User exceptions', () => {
                 password: '',
             })
             .expect(HttpStatus.UNAUTHORIZED)
-            .expect(({body}) => {
+            .expect(({ body }) => {
                 expect(body.message).toMatch('Unauthorized');
                 expect(body.statusCode).toEqual(HttpStatus.UNAUTHORIZED);
             });
@@ -116,9 +107,9 @@ describe('UserController (e2e) User exceptions', () => {
                 email: '',
                 password: '',
             })
-            .auth(accessToken, {type: "bearer"})
+            .auth(accessToken, { type: 'bearer' })
             .expect(HttpStatus.BAD_REQUEST)
-            .expect(({body}) => {
+            .expect(({ body }) => {
                 expect(body.message).toEqual(expect.any(Array));
                 expect(body.statusCode).toEqual(HttpStatus.BAD_REQUEST);
             });
@@ -132,9 +123,9 @@ describe('UserController (e2e) User exceptions', () => {
                 email: 'E-Mail',
                 password: 'password',
             })
-            .auth(accessToken, {type: "bearer"})
+            .auth(accessToken, { type: 'bearer' })
             .expect(HttpStatus.BAD_REQUEST)
-            .expect(({body}) => {
+            .expect(({ body }) => {
                 expect(body.message).toEqual(['email must be an email']);
                 expect(body.statusCode).toEqual(HttpStatus.BAD_REQUEST);
             });
@@ -167,7 +158,7 @@ describe('UserController (e2e) User life cycle', () => {
         const moduleFixture: TestingModule = await Test.createTestingModule(testingModuleMetadata).compile();
 
         app = moduleFixture.createNestApplication();
-        app.useGlobalPipes(new ValidationPipe({whitelist: true, transform: true,}));
+        app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
         await app.init();
     });
 
@@ -176,7 +167,7 @@ describe('UserController (e2e) User life cycle', () => {
 
         const createUserReq = await request(app.getHttpServer())
             .post('/user')
-            .auth(accessToken, {type: "bearer"})
+            .auth(accessToken, { type: 'bearer' })
             .send(exampleUser as CreateUserDto)
             .expect(HttpStatus.CREATED)
             .expect((res) => {
@@ -195,12 +186,12 @@ describe('UserController (e2e) User life cycle', () => {
                 expect(res.body).toMatchObject(createdUser);
             });
 
-        const user = getOneUserReq.body
+        const user = getOneUserReq.body;
         await request(app.getHttpServer())
             .patch('/user/' + user.id)
-            .auth(accessToken, {type: "bearer"})
+            .auth(accessToken, { type: 'bearer' })
             .send({
-                email: 'email'
+                email: 'email',
             })
             .expect(HttpStatus.BAD_REQUEST)
             .expect((res) => {
@@ -211,17 +202,17 @@ describe('UserController (e2e) User life cycle', () => {
         const newEmail: string = 'newEmail@email.new';
         await request(app.getHttpServer())
             .patch('/user/' + user.id)
-            .auth(accessToken, {type: "bearer"})
+            .auth(accessToken, { type: 'bearer' })
             .send({
                 full_name: newFullName,
                 email: newEmail,
             })
             .expect(HttpStatus.FORBIDDEN);
 
-        const userAccessToken = await authTestUser(app, {email: exampleUser.email, password: exampleUser.password});
-        const  updateUserReq = await request(app.getHttpServer())
+        const userAccessToken = await authTestUser(app, { email: exampleUser.email, password: exampleUser.password });
+        const updateUserReq = await request(app.getHttpServer())
             .patch('/user/' + user.id)
-            .auth(userAccessToken, {type: "bearer"})
+            .auth(userAccessToken, { type: 'bearer' })
             .send({
                 full_name: newFullName,
                 email: newEmail,
@@ -244,9 +235,9 @@ describe('UserController (e2e) User life cycle', () => {
         request(app.getHttpServer())
             .post('/user')
             .send(updatedUser as CreateUserDto)
-            .auth(accessToken, {type: "bearer"})
+            .auth(accessToken, { type: 'bearer' })
             .expect(HttpStatus.BAD_REQUEST)
-            .expect(({body}) => {
+            .expect(({ body }) => {
                 expect(body.message).toEqual(expect.any(Array));
                 expect(body.message[0]).toMatch('Account with this email already exists.');
                 expect(body.statusCode).toEqual(HttpStatus.BAD_REQUEST);
@@ -258,23 +249,22 @@ describe('UserController (e2e) User life cycle', () => {
 
         request(app.getHttpServer())
             .delete('/user/' + 99999)
-            .auth(accessToken, {type: "bearer"})
+            .auth(accessToken, { type: 'bearer' })
             .expect(HttpStatus.UNAUTHORIZED);
 
         request(app.getHttpServer())
             .delete('/user/' + updatedUser.id)
-            .auth(accessToken, {type: "bearer"})
+            .auth(accessToken, { type: 'bearer' })
             .expect(HttpStatus.CREATED);
 
         request(app.getHttpServer())
             .delete('/user/' + 'qwerty')
-            .auth(accessToken, {type: "bearer"})
+            .auth(accessToken, { type: 'bearer' })
             .expect(HttpStatus.BAD_REQUEST)
-            .expect(({body}) => {
-                expect(body.message).toMatch('Validation failed (numeric string is expected)')
+            .expect(({ body }) => {
+                expect(body.message).toMatch('Validation failed (numeric string is expected)');
             });
     });
-
 
     afterAll((done) => {
         app.close();

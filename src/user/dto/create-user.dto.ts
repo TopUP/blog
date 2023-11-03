@@ -8,7 +8,7 @@ export class CreateUserDto {
     @IsString()
     full_name: string;
 
-    @ApiProperty({ description: 'Электронная почта пользователя', nullable: false, })
+    @ApiProperty({ description: 'Электронная почта пользователя', nullable: false })
     @IsNotEmpty()
     @IsEmail()
     email: string;

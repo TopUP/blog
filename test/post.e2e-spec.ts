@@ -1,41 +1,36 @@
-import {Test, TestingModule} from '@nestjs/testing';
-import {HttpStatus, INestApplication, ValidationPipe} from '@nestjs/common';
+import { Test, TestingModule } from '@nestjs/testing';
+import { HttpStatus, INestApplication, ValidationPipe } from '@nestjs/common';
 import * as request from 'supertest';
 
-import {registerTestUser, TypeORMTestingModule} from 'src/utils/test/helpers';
+import { registerTestUser, TypeORMTestingModule } from 'src/utils/test/helpers';
 
-import {AuthModule} from "src/auth/auth.module";
+import { AuthModule } from 'src/auth/auth.module';
 
-import {UserModule} from 'src/user/user.module';
-import {User} from 'src/user/entities/user.entity';
+import { UserModule } from 'src/user/user.module';
+import { User } from 'src/user/entities/user.entity';
 
-import {PostModule} from "src/post/post.module";
-import {Post} from "src/post/entities/post.entity";
+import { PostModule } from 'src/post/post.module';
+import { Post } from 'src/post/entities/post.entity';
 
-import {CommentModule} from "src/comment/comment.module";
-import {Comment} from "src/comment/entities/comment.entity";
+import { CommentModule } from 'src/comment/comment.module';
+import { Comment } from 'src/comment/entities/comment.entity';
 
-import {CategoryModule} from "src/category/category.module";
-import {Category} from "src/category/entities/category.entity";
-import {CreatePostDto} from "../src/post/dto/create-post.dto";
-import {CreateCategoryDto} from "../src/category/dto/create-category.dto";
+import { CategoryModule } from 'src/category/category.module';
+import { Category } from 'src/category/entities/category.entity';
+import { CreatePostDto } from '../src/post/dto/create-post.dto';
+import { CreateCategoryDto } from '../src/category/dto/create-category.dto';
 
 const testingModuleMetadata = {
     imports: [
-        TypeORMTestingModule([
-            User,
-            Post,
-            Category,
-            Comment
-        ]),
+        TypeORMTestingModule([User, Post, Category, Comment]),
 
         UserModule,
         AuthModule,
         PostModule,
         CategoryModule,
-        CommentModule
+        CommentModule,
     ],
-}
+};
 
 describe('PostController (e2e) Post exceptions', () => {
     let app: INestApplication;
@@ -52,41 +47,33 @@ describe('PostController (e2e) Post exceptions', () => {
         const moduleFixture: TestingModule = await Test.createTestingModule(testingModuleMetadata).compile();
 
         app = moduleFixture.createNestApplication();
-        app.useGlobalPipes(new ValidationPipe({whitelist: true, transform: true,}));
+        app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
         await app.init();
     });
 
-
     it('/post (GET)', () => {
-        return request(app.getHttpServer())
-            .get('/post')
-            .expect(HttpStatus.OK)
-            .expect([]);
+        return request(app.getHttpServer()).get('/post').expect(HttpStatus.OK).expect([]);
     });
 
     it('/post/:id (GET)', () => {
         return request(app.getHttpServer())
             .get('/post/' + 'qwerty')
             .expect(HttpStatus.BAD_REQUEST)
-            .expect(({body}) => {
-                expect(body.message).toMatch('Validation failed (numeric string is expected)')
-            })
+            .expect(({ body }) => {
+                expect(body.message).toMatch('Validation failed (numeric string is expected)');
+            });
     });
 
     it('/post/:id (GET)', () => {
-        return request(app.getHttpServer())
-            .get('/post/1')
-            .expect(HttpStatus.NOT_FOUND)
-            .expect('')
-            ;
+        return request(app.getHttpServer()).get('/post/1').expect(HttpStatus.NOT_FOUND).expect('');
     });
 
     it('/post (POST)', async () => {
-        accessToken = await registerTestUser(app, adminUser)
+        accessToken = await registerTestUser(app, adminUser);
         return request(app.getHttpServer())
             .post('/post')
             .expect(HttpStatus.UNAUTHORIZED)
-            .expect(({body}) => {
+            .expect(({ body }) => {
                 expect(body.message).toMatch('Unauthorized');
                 expect(body.statusCode).toEqual(HttpStatus.UNAUTHORIZED);
             });
@@ -100,9 +87,9 @@ describe('PostController (e2e) Post exceptions', () => {
                 title: '',
                 body: '',
             } as CreatePostDto)
-            .auth(accessToken, {type: "bearer"})
+            .auth(accessToken, { type: 'bearer' })
             .expect(HttpStatus.BAD_REQUEST)
-            .expect(({body}) => {
+            .expect(({ body }) => {
                 expect(body.message).toEqual(expect.any(Array));
                 expect(body.statusCode).toEqual(HttpStatus.BAD_REQUEST);
             });
@@ -116,13 +103,13 @@ describe('PostController (e2e) Post exceptions', () => {
                 title: 'Some title',
                 body: 'Some body',
             } as CreatePostDto)
-            .auth(accessToken, {type: "bearer"})
+            .auth(accessToken, { type: 'bearer' })
             .expect(HttpStatus.BAD_REQUEST)
-            .expect(({body}) => {
+            .expect(({ body }) => {
                 expect(body).toMatchObject({
-                    "message": ["Category not found",],
-                    "error": "Bad Request",
-                    "statusCode": 400
+                    message: ['Category not found'],
+                    error: 'Bad Request',
+                    statusCode: 400,
                 });
             });
     });
@@ -160,7 +147,7 @@ describe('PostController (e2e) Post life cycle', () => {
         const moduleFixture: TestingModule = await Test.createTestingModule(testingModuleMetadata).compile();
 
         app = moduleFixture.createNestApplication();
-        app.useGlobalPipes(new ValidationPipe({whitelist: true, transform: true,}));
+        app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
         await app.init();
     });
 
@@ -168,11 +155,11 @@ describe('PostController (e2e) Post life cycle', () => {
         const accessToken = await registerTestUser(app, adminUser);
 
         const categories = [];
-        for (let i = 1; i<=2; i++) {
+        for (let i = 1; i <= 2; i++) {
             let categoryCreateReq = await request(app.getHttpServer())
                 .post('/category')
-                .auth(accessToken, {type: "bearer"})
-                .send({ title: `Post category ${i}`, } as CreateCategoryDto);
+                .auth(accessToken, { type: 'bearer' })
+                .send({ title: `Post category ${i}` } as CreateCategoryDto);
             categories.push(categoryCreateReq.body);
         }
 
@@ -189,7 +176,7 @@ describe('PostController (e2e) Post life cycle', () => {
 
         const createPostReq = await request(app.getHttpServer())
             .post('/post')
-            .auth(accessToken, {type: "bearer"})
+            .auth(accessToken, { type: 'bearer' })
             .send({
                 categoryId: categories[0].id,
                 title: 'Post title',
@@ -198,9 +185,7 @@ describe('PostController (e2e) Post life cycle', () => {
             .expect(HttpStatus.CREATED)
             .expect((res) => {
                 expect(res.body).toMatchObject(expectedPost);
-            })
-        ;
-
+            });
         const createdPost = await createPostReq.body;
         const getOnePostReq = await request(app.getHttpServer())
             .get('/post/' + createdPost.id)
@@ -208,16 +193,16 @@ describe('PostController (e2e) Post life cycle', () => {
             .expect((res) => {
                 expect(res.body).toMatchObject(expectedPost);
             });
-        const post = getOnePostReq.body
+        const post = getOnePostReq.body;
 
         await request(app.getHttpServer())
             .patch('/post/' + post.id)
-            .auth(accessToken, {type: "bearer"})
+            .auth(accessToken, { type: 'bearer' })
             .send({
                 categoryId: 999,
             } as CreatePostDto)
             .expect(HttpStatus.BAD_REQUEST)
-            .expect(({body}) => {
+            .expect(({ body }) => {
                 expect(body.message).toEqual(expect.any(Array));
                 expect(body.message[0]).toMatch('Category not found');
                 expect(body.statusCode).toEqual(HttpStatus.BAD_REQUEST);
@@ -228,7 +213,7 @@ describe('PostController (e2e) Post life cycle', () => {
         const newBody: string = 'New Post Body';
         const updatePostReq = await request(app.getHttpServer())
             .patch('/post/' + post.id)
-            .auth(accessToken, {type: "bearer"})
+            .auth(accessToken, { type: 'bearer' })
             .send({
                 categoryId: newCategory.id,
                 title: newTitle,
@@ -240,7 +225,7 @@ describe('PostController (e2e) Post life cycle', () => {
                     title: newTitle,
                     body: newBody,
                     category: newCategory,
-                    id: post.id
+                    id: post.id,
                 });
             });
 
@@ -255,10 +240,10 @@ describe('PostController (e2e) Post life cycle', () => {
                 expect(res.body).toMatchObject(expectedPost);
             });
 
-        const secondAccessToken =  await registerTestUser(app, exampleUser);
+        const secondAccessToken = await registerTestUser(app, exampleUser);
         request(app.getHttpServer())
             .patch('/post/' + post.id)
-            .auth(secondAccessToken, {type: "bearer"})
+            .auth(secondAccessToken, { type: 'bearer' })
             .send({
                 title: newTitle,
                 body: newBody,
@@ -273,25 +258,25 @@ describe('PostController (e2e) Post life cycle', () => {
 
         request(app.getHttpServer())
             .delete('/post/' + 99999)
-            .auth(accessToken, {type: "bearer"})
+            .auth(accessToken, { type: 'bearer' })
             .expect(HttpStatus.NOT_FOUND);
 
         request(app.getHttpServer())
             .delete('/post/' + updatedPost.id)
-            .auth(secondAccessToken, {type: "bearer"})
+            .auth(secondAccessToken, { type: 'bearer' })
             .expect(HttpStatus.FORBIDDEN);
 
         request(app.getHttpServer())
             .delete('/post/' + updatedPost.id)
-            .auth(accessToken, {type: "bearer"})
+            .auth(accessToken, { type: 'bearer' })
             .expect(HttpStatus.CREATED);
 
         request(app.getHttpServer())
             .delete('/post/' + 'qwerty')
-            .auth(accessToken, {type: "bearer"})
+            .auth(accessToken, { type: 'bearer' })
             .expect(HttpStatus.BAD_REQUEST)
-            .expect(({body}) => {
-                expect(body.message).toMatch('Validation failed (numeric string is expected)')
+            .expect(({ body }) => {
+                expect(body.message).toMatch('Validation failed (numeric string is expected)');
             });
     });
 

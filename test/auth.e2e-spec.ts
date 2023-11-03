@@ -1,35 +1,31 @@
-import {Test, TestingModule} from '@nestjs/testing';
-import {HttpStatus, INestApplication, ValidationPipe} from '@nestjs/common';
+import { Test, TestingModule } from '@nestjs/testing';
+import { HttpStatus, INestApplication, ValidationPipe } from '@nestjs/common';
 import * as request from 'supertest';
 
-import {TypeORMTestingModule} from "src/utils/test/helpers";
+import { TypeORMTestingModule } from 'src/utils/test/helpers';
 
-import {AuthModule} from "src/auth/auth.module";
-import {RegisterUserDto} from "src/auth/dto/register-user.dto";
+import { AuthModule } from 'src/auth/auth.module';
+import { RegisterUserDto } from 'src/auth/dto/register-user.dto';
 
-import {UserModule} from "src/user/user.module";
-import {User} from "src/user/entities/user.entity";
+import { UserModule } from 'src/user/user.module';
+import { User } from 'src/user/entities/user.entity';
 
-import {PostModule} from "src/post/post.module";
-import {Post} from "src/post/entities/post.entity";
+import { PostModule } from 'src/post/post.module';
+import { Post } from 'src/post/entities/post.entity';
 
-import {CategoryModule} from "src/category/category.module";
-import {Category} from "src/category/entities/category.entity";
+import { CategoryModule } from 'src/category/category.module';
+import { Category } from 'src/category/entities/category.entity';
 
-import {CommentModule} from "src/comment/comment.module";
-import {Comment} from "src/comment/entities/comment.entity";
+import { CommentModule } from 'src/comment/comment.module';
+import { Comment } from 'src/comment/entities/comment.entity';
 
 describe('AuthController (e2e)', () => {
     let app: INestApplication;
 
     beforeAll(async () => {
         const moduleFixture: TestingModule = await Test.createTestingModule({
-            imports: [TypeORMTestingModule([
-                User,
-                Post,
-                Category,
-                Comment,
-            ]),
+            imports: [
+                TypeORMTestingModule([User, Post, Category, Comment]),
 
                 AuthModule,
                 UserModule,
@@ -40,7 +36,7 @@ describe('AuthController (e2e)', () => {
         }).compile();
 
         app = moduleFixture.createNestApplication();
-        app.useGlobalPipes(new ValidationPipe({whitelist: true, transform: true,}));
+        app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
         await app.init();
     });
 
@@ -49,7 +45,7 @@ describe('AuthController (e2e)', () => {
             .post('/auth/register')
             .send({})
             .expect(HttpStatus.BAD_REQUEST)
-            .expect(({body}) => {
+            .expect(({ body }) => {
                 expect(body.message).toEqual(expect.any(Array));
                 expect(body.statusCode).toEqual(400);
             });
@@ -63,7 +59,7 @@ describe('AuthController (e2e)', () => {
                 password_confirmation: 'password',
             } as RegisterUserDto)
             .expect(HttpStatus.BAD_REQUEST)
-            .expect(({body}) => {
+            .expect(({ body }) => {
                 expect(body.message).toEqual(expect.any(Array));
                 expect(body.statusCode).toEqual(400);
             });
@@ -77,7 +73,7 @@ describe('AuthController (e2e)', () => {
                 password_confirmation: 'bad password',
             } as RegisterUserDto)
             .expect(HttpStatus.BAD_REQUEST)
-            .expect(({body}) => {
+            .expect(({ body }) => {
                 expect(body.message).toEqual(expect.any(Array));
                 expect(body.message[0]).toMatch('Password not confirmed');
                 expect(body.statusCode).toEqual(400);
@@ -106,9 +102,11 @@ describe('AuthController (e2e)', () => {
             .send(exampleUser as RegisterUserDto)
             .expect(HttpStatus.CREATED)
             .expect((res) => {
-                expect(res.body).toEqual(expect.objectContaining({
-                    access_token: expect.any(String)
-                }));
+                expect(res.body).toEqual(
+                    expect.objectContaining({
+                        access_token: expect.any(String),
+                    }),
+                );
             });
 
         const loginReq = await request(app.getHttpServer())
@@ -119,9 +117,11 @@ describe('AuthController (e2e)', () => {
             })
             .expect(HttpStatus.CREATED)
             .expect((res) => {
-                expect(res.body).toEqual(expect.objectContaining({
-                    access_token: expect.any(String)
-                }));
+                expect(res.body).toEqual(
+                    expect.objectContaining({
+                        access_token: expect.any(String),
+                    }),
+                );
             });
 
         const accessToken: string = loginReq.body.access_token;

@@ -10,15 +10,17 @@ import {
     Res,
     ParseIntPipe,
     UseGuards,
-    Request, NotFoundException, ForbiddenException,
+    Request,
+    NotFoundException,
+    ForbiddenException,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { User } from './entities/user.entity';
-import {emailAlreadyExistsHandler} from "../utils/validation/helpers";
-import {AuthGuard} from "@nestjs/passport";
+import { emailAlreadyExistsHandler } from '../utils/validation/helpers';
+import { AuthGuard } from '@nestjs/passport';
 
 @ApiTags('User')
 @ApiBearerAuth()
@@ -36,9 +38,7 @@ export class UserController {
     @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Bad Request' })
     @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Unauthorized.' })
     async create(@Body() createUserDto: CreateUserDto) {
-        return await this.userService
-            .create(createUserDto)
-            .catch(emailAlreadyExistsHandler);
+        return await this.userService.create(createUserDto).catch(emailAlreadyExistsHandler);
     }
 
     @Get()
@@ -57,7 +57,7 @@ export class UserController {
     async findOne(@Param('id', ParseIntPipe) id: number) {
         const user = await this.userService.findOne(+id);
         if (!user) {
-            throw new NotFoundException;
+            throw new NotFoundException();
         }
 
         return user;
@@ -78,16 +78,14 @@ export class UserController {
     async update(@Param('id', ParseIntPipe) id: string, @Body() updateUserDto: UpdateUserDto, @Request() req) {
         const user = await this.userService.findOne(+id);
         if (!user) {
-            throw new NotFoundException;
+            throw new NotFoundException();
         }
 
         if (user.id != req.user.id) {
-            throw new ForbiddenException;
+            throw new ForbiddenException();
         }
 
-        return await this.userService
-            .update(+id, updateUserDto)
-            .catch(emailAlreadyExistsHandler);
+        return await this.userService.update(+id, updateUserDto).catch(emailAlreadyExistsHandler);
     }
 
     @UseGuards(AuthGuard('jwt'))
@@ -101,11 +99,11 @@ export class UserController {
     async remove(@Param('id', ParseIntPipe) id: string, @Request() req, @Res() res) {
         const user = await this.userService.findOne(+id);
         if (!user) {
-            throw new NotFoundException;
+            throw new NotFoundException();
         }
 
         if (user.id != req.user.id) {
-            throw new ForbiddenException;
+            throw new ForbiddenException();
         }
 
         await this.userService.remove(+id);

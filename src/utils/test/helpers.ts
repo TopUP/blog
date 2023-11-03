@@ -1,11 +1,11 @@
 // import { ConfigModule } from '@nestjs/config';
 // import * as process from 'process';
-import {TypeOrmModule} from '@nestjs/typeorm';
-import {TypeOrmModuleOptions} from '@nestjs/typeorm/dist/interfaces/typeorm-options.interface';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { TypeOrmModuleOptions } from '@nestjs/typeorm/dist/interfaces/typeorm-options.interface';
 // import { getConnection } from 'typeorm';
-import {INestApplication} from "@nestjs/common";
-import * as request from "supertest";
-import {RegisterUserDto} from "../../auth/dto/register-user.dto";
+import { INestApplication } from '@nestjs/common';
+import * as request from 'supertest';
+import { RegisterUserDto } from '../../auth/dto/register-user.dto';
 
 // export async function clearDB() {
 //     const entities = getConnection('default').entityMetadatas;
@@ -34,24 +34,25 @@ export const TypeORMTestingModule = (entities: any[]) => {
     return TypeOrmModule.forRoot(config);
 };
 
-export async function registerTestUser(app: INestApplication, user: {
-    email: string,
-    password: string
-}): Promise<string> {
+export async function registerTestUser(
+    app: INestApplication,
+    user: {
+        email: string;
+        password: string;
+    },
+): Promise<string> {
     const registerReq = await request(app.getHttpServer())
         .post('/auth/register')
-        .send({password_confirmation: user.password, ...user} as RegisterUserDto);
+        .send({ password_confirmation: user.password, ...user } as RegisterUserDto);
 
     return registerReq.body.access_token;
 }
 
-export async function authTestUser(app: INestApplication, user: { email: string, password: string }): Promise<string> {
-    const accessTokenReq = await request(app.getHttpServer())
-        .post('/auth/login')
-        .send({
-            email: user.email,
-            password: user.password,
-        });
+export async function authTestUser(app: INestApplication, user: { email: string; password: string }): Promise<string> {
+    const accessTokenReq = await request(app.getHttpServer()).post('/auth/login').send({
+        email: user.email,
+        password: user.password,
+    });
 
     return accessTokenReq.body.access_token;
 }

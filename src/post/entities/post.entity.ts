@@ -29,5 +29,5 @@ export class Post {
 
     @OneToMany(() => Comment, (comment) => comment.post)
     @ApiProperty({ type: () => [Comment], description: 'Комментарии к посту', nullable: false, isArray: true })
-    comments: Promise<Comment[]>;
+    comments: Comment[];
 }

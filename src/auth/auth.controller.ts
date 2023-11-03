@@ -4,7 +4,6 @@ import { ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import { AuthService } from './auth.service';
 import { RegisterUserDto } from './dto/register-user.dto';
-import { emailAlreadyExistsHandler } from '../utils/validation/helpers';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -28,13 +27,10 @@ export class AuthController {
             });
         }
 
-        try {
-            const user = await this.authService.register(data);
-            // const {password, password_confirmation, ...userData} = user;
-            return this.authService.login(user);
-        } catch (e) {
-            emailAlreadyExistsHandler(e);
-        }
+        await this.authService.emailAlreadyExistsFail(data.email);
+
+        const user = await this.authService.register(data);
+        return this.authService.login(user);
     }
 
     @UseGuards(AuthGuard('local'))

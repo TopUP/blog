@@ -11,11 +11,10 @@ import {
     Req,
     BadRequestException,
     ForbiddenException,
-    NotFoundException,
     Res,
     ParseIntPipe,
 } from '@nestjs/common';
-import { ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import { CommentService } from './comment.service';
 import { CreateCommentDto } from './dto/create-comment.dto';
@@ -25,8 +24,10 @@ import { AuthGuard } from '@nestjs/passport';
 import { Post as PostEntity } from '../post/entities/post.entity';
 import { PostService } from '../post/post.service';
 import { UserService } from '../user/user.service';
+import { EntityNotFoundError } from 'typeorm';
 
 @ApiTags('Comment')
+@ApiBearerAuth()
 @Controller('comment')
 export class CommentController {
     constructor(
@@ -42,7 +43,7 @@ export class CommentController {
     @ApiQuery({ name: 'body', required: true, description: 'Тело поста' })
     @ApiResponse({ status: HttpStatus.CREATED, description: 'Success', type: PostEntity })
     @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Bad Request' })
-    @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Unauthorized.' })
+    @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Unauthorized' })
     async create(@Body() createCommentDto: CreateCommentDto, @Req() req) {
         createCommentDto.user = await this.userService.findOne(req.user.id);
         createCommentDto.post = await this.postService.findOne(createCommentDto.postId);
@@ -71,12 +72,7 @@ export class CommentController {
     @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Bad Request' })
     @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Not found' })
     async findOne(@Param('id', ParseIntPipe) id: string) {
-        const comment = await this.commentService.findOne(+id);
-        if (!comment) {
-            throw new NotFoundException();
-        }
-
-        return comment;
+        return await this.commentService.findOne(+id);
     }
 
     @UseGuards(AuthGuard('jwt'))
@@ -86,22 +82,22 @@ export class CommentController {
     @ApiQuery({ name: 'body', required: true, description: 'Тело поста' })
     @ApiResponse({ status: HttpStatus.OK, description: 'Success', type: Comment })
     @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Bad Request' })
-    @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Unauthorized.' })
-    @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Forbidden.' })
+    @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Unauthorized' })
+    @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Forbidden' })
     @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Not found' })
     async update(@Param('id', ParseIntPipe) id: string, @Body() updateCommentDto: UpdateCommentDto, @Req() req) {
         const comment = await this.commentService.findOne(+id);
-        if (!comment) {
-            throw new NotFoundException();
-        }
 
-        const commentPost = await this.postService.findOne(comment.postId);
-        if (!commentPost) {
-            throw new BadRequestException({
-                message: ['Post not found'],
-                error: 'Bad Request',
-                statusCode: 400,
-            });
+        try {
+            await this.postService.findOne(comment.postId);
+        } catch (e) {
+            if (e instanceof EntityNotFoundError) {
+                throw new BadRequestException({
+                    message: ['Post not found'],
+                    error: 'Bad Request',
+                    statusCode: 400,
+                });
+            }
         }
 
         if (comment.userId != req.user.id) {
@@ -117,14 +113,11 @@ export class CommentController {
     @ApiParam({ name: 'id', required: true, description: 'ID комментария' })
     @ApiResponse({ status: HttpStatus.CREATED, description: 'Success' })
     @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Bad Request' })
-    @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Unauthorized.' })
-    @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Forbidden.' })
+    @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Unauthorized' })
+    @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Forbidden' })
     @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Not found' })
     async remove(@Param('id', ParseIntPipe) id: string, @Req() req, @Res() res) {
         const comment = await this.commentService.findOne(+id);
-        if (!comment) {
-            throw new NotFoundException();
-        }
 
         if (comment.userId != req.user.id) {
             throw new ForbiddenException();

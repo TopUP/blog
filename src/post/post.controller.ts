@@ -11,12 +11,10 @@ import {
     ParseIntPipe,
     HttpStatus,
     Res,
-    NotFoundException,
-    BadRequestException,
     Req,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
-import { ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import { PostService } from './post.service';
 import { CreatePostDto } from './dto/create-post.dto';
@@ -25,6 +23,7 @@ import { Post as PostEntity } from './entities/post.entity';
 import { CategoryService } from '../category/category.service';
 
 @ApiTags('Post')
+@ApiBearerAuth()
 @Controller('post')
 export class PostController {
     constructor(
@@ -40,17 +39,10 @@ export class PostController {
     @ApiQuery({ name: 'body', required: true, description: 'Тело поста' })
     @ApiResponse({ status: HttpStatus.CREATED, description: 'Success', type: PostEntity })
     @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Bad Request' })
-    @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Unauthorized.' })
+    @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Unauthorized' })
     async create(@Body() createPostDto: CreatePostDto, @Req() req) {
         createPostDto.user = req.user;
-        createPostDto.category = await this.categoryService.findOne(createPostDto.categoryId);
-        if (!createPostDto.category) {
-            throw new BadRequestException({
-                message: ['Category not found'],
-                error: 'Bad Request',
-                statusCode: 400,
-            });
-        }
+        createPostDto.category = await this.categoryService.getCategoryOrFail(createPostDto.categoryId);
 
         return this.postService.create(createPostDto);
     }
@@ -68,13 +60,8 @@ export class PostController {
     @ApiResponse({ status: HttpStatus.OK, description: 'Success', type: [PostEntity] })
     @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Bad Request' })
     @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Not found' })
-    async findOne(@Param('id', ParseIntPipe) id: string, @Res() res) {
-        const post = await this.postService.findOne(+id);
-        if (!post) {
-            return res.status(HttpStatus.NOT_FOUND).send();
-        }
-
-        return res.json(post);
+    async findOne(@Param('id', ParseIntPipe) id: string) {
+        return await this.postService.findOne(+id);
     }
 
     @UseGuards(AuthGuard('jwt'))
@@ -86,28 +73,18 @@ export class PostController {
     @ApiQuery({ name: 'body', required: false, description: 'Тело поста' })
     @ApiResponse({ status: HttpStatus.OK, description: 'Success', type: PostEntity })
     @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Bad Request' })
-    @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Unauthorized.' })
-    @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Forbidden.' })
+    @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Unauthorized' })
+    @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Forbidden' })
     @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Not found' })
     async update(@Param('id') id: string, @Body() updatePostDto: UpdatePostDto, @Req() req) {
         const post = await this.postService.findOne(+id);
-        if (!post) {
-            throw new NotFoundException();
-        }
 
         if (post.user.id != req.user.id) {
             throw new ForbiddenException();
         }
 
         if (updatePostDto.categoryId) {
-            updatePostDto.category = await this.categoryService.findOne(updatePostDto.categoryId);
-            if (!updatePostDto.category) {
-                throw new BadRequestException({
-                    message: ['Category not found'],
-                    error: 'Bad Request',
-                    statusCode: 400,
-                });
-            }
+            updatePostDto.category = await this.categoryService.getCategoryOrFail(updatePostDto.categoryId);
         }
 
         return this.postService.update(+id, updatePostDto);
@@ -118,14 +95,11 @@ export class PostController {
     @ApiOperation({ summary: 'Удаление поста' })
     @ApiParam({ name: 'id', required: true, description: 'ID' })
     @ApiResponse({ status: HttpStatus.CREATED, description: 'Deleted' })
-    @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Unauthorized.' })
-    @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Forbidden.' })
+    @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Unauthorized' })
+    @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Forbidden' })
     @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Not found' })
     async remove(@Param('id') id: string, @Req() req, @Res() res) {
         const post = await this.postService.findOne(+id);
-        if (!post) {
-            throw new NotFoundException();
-        }
 
         if (post.user.id != req.user.id) {
             throw new ForbiddenException();

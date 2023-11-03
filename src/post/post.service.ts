@@ -1,10 +1,12 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { Post } from './entities/post.entity';
+import { Category } from '../category/entities/category.entity';
+import { categoryHasPostsExceptionBody } from '../utils/validation/helpers';
 
 @Injectable()
 export class PostService {
@@ -28,7 +30,7 @@ export class PostService {
     }
 
     async findOne(id: number) {
-        const post = await this.repository.findOneBy({ id });
+        const post = await this.repository.findOneByOrFail({ id });
         delete post?.user.password;
 
         return post;
@@ -40,5 +42,19 @@ export class PostService {
 
     async remove(id: number) {
         await this.repository.delete(id);
+    }
+
+    findByCategory(category: Category) {
+        return this.repository.findOneBy({ category });
+    }
+
+    async categoryHasPostsFail(category: Category) {
+        if (!category) {
+            return;
+        }
+
+        if (await this.findByCategory(category)) {
+            throw new BadRequestException(categoryHasPostsExceptionBody);
+        }
     }
 }

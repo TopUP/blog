@@ -19,6 +19,8 @@ import { CategoryModule } from 'src/category/category.module';
 import { Category } from 'src/category/entities/category.entity';
 import { CreatePostDto } from '../src/post/dto/create-post.dto';
 import { CreateCategoryDto } from '../src/category/dto/create-category.dto';
+import { EntityNotFoundExceptionFilter } from '../src/utils/filters/entity-not-found-exception.filter';
+import { categoryNotFoundExceptionBody, notFoundExceptionBody } from '../src/utils/validation/helpers';
 
 const testingModuleMetadata = {
     imports: [
@@ -47,7 +49,10 @@ describe('PostController (e2e) Post exceptions', () => {
         const moduleFixture: TestingModule = await Test.createTestingModule(testingModuleMetadata).compile();
 
         app = moduleFixture.createNestApplication();
+
         app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+        app.useGlobalFilters(new EntityNotFoundExceptionFilter());
+
         await app.init();
     });
 
@@ -65,7 +70,12 @@ describe('PostController (e2e) Post exceptions', () => {
     });
 
     it('/post/:id (GET)', () => {
-        return request(app.getHttpServer()).get('/post/1').expect(HttpStatus.NOT_FOUND).expect('');
+        return request(app.getHttpServer())
+            .get('/post/1')
+            .expect(HttpStatus.NOT_FOUND)
+            .expect(({ body }) => {
+                expect(body).toMatchObject(notFoundExceptionBody);
+            });
     });
 
     it('/post (POST)', async () => {
@@ -106,11 +116,7 @@ describe('PostController (e2e) Post exceptions', () => {
             .auth(accessToken, { type: 'bearer' })
             .expect(HttpStatus.BAD_REQUEST)
             .expect(({ body }) => {
-                expect(body).toMatchObject({
-                    message: ['Category not found'],
-                    error: 'Bad Request',
-                    statusCode: 400,
-                });
+                expect(body).toMatchObject(categoryNotFoundExceptionBody);
             });
     });
 
@@ -147,7 +153,10 @@ describe('PostController (e2e) Post life cycle', () => {
         const moduleFixture: TestingModule = await Test.createTestingModule(testingModuleMetadata).compile();
 
         app = moduleFixture.createNestApplication();
+
         app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+        app.useGlobalFilters(new EntityNotFoundExceptionFilter());
+
         await app.init();
     });
 
@@ -203,9 +212,7 @@ describe('PostController (e2e) Post life cycle', () => {
             } as CreatePostDto)
             .expect(HttpStatus.BAD_REQUEST)
             .expect(({ body }) => {
-                expect(body.message).toEqual(expect.any(Array));
-                expect(body.message[0]).toMatch('Category not found');
-                expect(body.statusCode).toEqual(HttpStatus.BAD_REQUEST);
+                expect(body).toMatchObject(categoryNotFoundExceptionBody);
             });
 
         const newCategory: Category = categories[1];
@@ -259,7 +266,10 @@ describe('PostController (e2e) Post life cycle', () => {
         request(app.getHttpServer())
             .delete('/post/' + 99999)
             .auth(accessToken, { type: 'bearer' })
-            .expect(HttpStatus.NOT_FOUND);
+            .expect(HttpStatus.NOT_FOUND)
+            .expect(({ body }) => {
+                expect(body).toMatchObject(notFoundExceptionBody);
+            });
 
         request(app.getHttpServer())
             .delete('/post/' + updatedPost.id)

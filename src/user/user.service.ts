@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
@@ -7,6 +7,7 @@ import * as process from 'process';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from './entities/user.entity';
+import { emailAlreadyExistsExceptionBody } from '../utils/validation/helpers';
 
 @Injectable()
 export class UserService {
@@ -26,7 +27,7 @@ export class UserService {
     }
 
     findOne(id: number) {
-        return this.repository.findOneBy({ id });
+        return this.repository.findOneByOrFail({ id });
     }
 
     async update(id: number, data: UpdateUserDto) {
@@ -39,5 +40,19 @@ export class UserService {
 
     async remove(id: number) {
         await this.repository.delete(id);
+    }
+
+    findByEmail(email: string) {
+        return this.repository.findOneBy({ email });
+    }
+
+    async emailAlreadyExistsFail(email: string) {
+        if (!email) {
+            return;
+        }
+
+        if (await this.findByEmail(email)) {
+            throw new BadRequestException(emailAlreadyExistsExceptionBody);
+        }
     }
 }

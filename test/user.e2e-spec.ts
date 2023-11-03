@@ -19,6 +19,8 @@ import { Comment } from 'src/comment/entities/comment.entity';
 import { CategoryModule } from 'src/category/category.module';
 import { Category } from 'src/category/entities/category.entity';
 import { ConfigModule } from '@nestjs/config';
+import { emailAlreadyExistsExceptionBody, notFoundExceptionBody } from '../src/utils/validation/helpers';
+import { EntityNotFoundExceptionFilter } from '../src/utils/filters/entity-not-found-exception.filter';
 
 const testingModuleMetadata = {
     imports: [
@@ -45,18 +47,14 @@ describe('UserController (e2e) User exceptions', () => {
         password: 'qwerty',
     };
 
-    // const exampleUser = {
-    //     id: 2,
-    //     full_name: 'Example User',
-    //     email: 'example_user@blog.net',
-    //     password: 'qwerty',
-    // };
-
     beforeAll(async () => {
         const moduleFixture: TestingModule = await Test.createTestingModule(testingModuleMetadata).compile();
 
         app = moduleFixture.createNestApplication();
+
         app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+        app.useGlobalFilters(new EntityNotFoundExceptionFilter());
+
         await app.init();
     });
 
@@ -78,8 +76,7 @@ describe('UserController (e2e) User exceptions', () => {
             .get('/user/1')
             .expect(HttpStatus.NOT_FOUND)
             .expect(({ body }) => {
-                expect(body.message).toMatch('Not Found');
-                expect(body.statusCode).toEqual(HttpStatus.NOT_FOUND);
+                expect(body).toMatchObject(notFoundExceptionBody);
             });
     });
 
@@ -158,7 +155,10 @@ describe('UserController (e2e) User life cycle', () => {
         const moduleFixture: TestingModule = await Test.createTestingModule(testingModuleMetadata).compile();
 
         app = moduleFixture.createNestApplication();
+
         app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+        app.useGlobalFilters(new EntityNotFoundExceptionFilter());
+
         await app.init();
     });
 
@@ -230,34 +230,40 @@ describe('UserController (e2e) User life cycle', () => {
             .expect((res) => {
                 expect(res.body).toMatchObject(updatedUser);
             });
-        updatedUser = getUpdatedUserReq.body;
 
-        request(app.getHttpServer())
+        updatedUser = getUpdatedUserReq.body;
+        await request(app.getHttpServer())
             .post('/user')
             .send(updatedUser as CreateUserDto)
             .auth(accessToken, { type: 'bearer' })
             .expect(HttpStatus.BAD_REQUEST)
             .expect(({ body }) => {
-                expect(body.message).toEqual(expect.any(Array));
-                expect(body.message[0]).toMatch('Account with this email already exists.');
-                expect(body.statusCode).toEqual(HttpStatus.BAD_REQUEST);
+                expect(body).toMatchObject(emailAlreadyExistsExceptionBody);
             });
 
-        request(app.getHttpServer())
+        await request(app.getHttpServer())
             .delete('/user/' + 99999)
             .expect(HttpStatus.UNAUTHORIZED);
 
-        request(app.getHttpServer())
+        await request(app.getHttpServer())
             .delete('/user/' + 99999)
             .auth(accessToken, { type: 'bearer' })
-            .expect(HttpStatus.UNAUTHORIZED);
+            .expect(HttpStatus.NOT_FOUND)
+            .expect(({ body }) => {
+                expect(body).toMatchObject(notFoundExceptionBody);
+            });
 
-        request(app.getHttpServer())
+        await request(app.getHttpServer())
             .delete('/user/' + updatedUser.id)
             .auth(accessToken, { type: 'bearer' })
+            .expect(HttpStatus.FORBIDDEN);
+
+        await request(app.getHttpServer())
+            .delete('/user/' + updatedUser.id)
+            .auth(userAccessToken, { type: 'bearer' })
             .expect(HttpStatus.CREATED);
 
-        request(app.getHttpServer())
+        await request(app.getHttpServer())
             .delete('/user/' + 'qwerty')
             .auth(accessToken, { type: 'bearer' })
             .expect(HttpStatus.BAD_REQUEST)

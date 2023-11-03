@@ -19,7 +19,6 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { User } from './entities/user.entity';
-import { emailAlreadyExistsHandler } from '../utils/validation/helpers';
 import { AuthGuard } from '@nestjs/passport';
 
 @ApiTags('User')
@@ -36,9 +35,11 @@ export class UserController {
     @ApiQuery({ name: 'password', required: true, description: 'Пароль' })
     @ApiResponse({ status: HttpStatus.OK, description: 'Success', type: User })
     @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Bad Request' })
-    @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Unauthorized.' })
+    @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Unauthorized' })
     async create(@Body() createUserDto: CreateUserDto) {
-        return await this.userService.create(createUserDto).catch(emailAlreadyExistsHandler);
+        await this.userService.emailAlreadyExistsFail(createUserDto.email);
+
+        return await this.userService.create(createUserDto);
     }
 
     @Get()
@@ -72,8 +73,8 @@ export class UserController {
     @ApiQuery({ name: 'password', required: false, description: 'Пароль' })
     @ApiResponse({ status: HttpStatus.OK, description: 'Success', type: User })
     @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Bad Request' })
-    @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Unauthorized.' })
-    @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Forbidden.' })
+    @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Unauthorized' })
+    @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Forbidden' })
     @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Not found' })
     async update(@Param('id', ParseIntPipe) id: string, @Body() updateUserDto: UpdateUserDto, @Request() req) {
         const user = await this.userService.findOne(+id);
@@ -85,7 +86,9 @@ export class UserController {
             throw new ForbiddenException();
         }
 
-        return await this.userService.update(+id, updateUserDto).catch(emailAlreadyExistsHandler);
+        await this.userService.emailAlreadyExistsFail(updateUserDto.email);
+
+        return await this.userService.update(+id, updateUserDto);
     }
 
     @UseGuards(AuthGuard('jwt'))
@@ -93,8 +96,8 @@ export class UserController {
     @ApiOperation({ summary: 'Удаление пользователя' })
     @ApiParam({ name: 'id', required: true, description: 'ID' })
     @ApiResponse({ status: HttpStatus.CREATED, description: 'Deleted' })
-    @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Unauthorized.' })
-    @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Forbidden.' })
+    @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Unauthorized' })
+    @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Forbidden' })
     @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Not found' })
     async remove(@Param('id', ParseIntPipe) id: string, @Request() req, @Res() res) {
         const user = await this.userService.findOne(+id);

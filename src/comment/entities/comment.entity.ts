@@ -4,7 +4,7 @@ import { ApiProperty, ApiTags } from '@nestjs/swagger';
 import { User } from '../../user/entities/user.entity';
 import { Post } from '../../post/entities/post.entity';
 
-@ApiTags('User')
+@ApiTags('Comment')
 @Entity()
 export class Comment {
     @PrimaryGeneratedColumn()

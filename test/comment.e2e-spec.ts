@@ -19,6 +19,8 @@ import { CategoryModule } from 'src/category/category.module';
 import { Category } from 'src/category/entities/category.entity';
 import { CreateCommentDto } from '../src/comment/dto/create-comment.dto';
 import { UpdateCommentDto } from '../src/comment/dto/update-comment.dto';
+import { EntityNotFoundExceptionFilter } from '../src/utils/filters/entity-not-found-exception.filter';
+import { notFoundExceptionBody } from '../src/utils/validation/helpers';
 
 const testingModuleMetadata = {
     imports: [
@@ -32,7 +34,7 @@ const testingModuleMetadata = {
     ],
 };
 
-describe('CategoryController (e2e) Post exceptions', () => {
+describe('CommentController (e2e) Post exceptions', () => {
     let app: INestApplication;
     let accessToken: string;
     const adminUserRegData = {
@@ -55,7 +57,10 @@ describe('CategoryController (e2e) Post exceptions', () => {
         const moduleFixture: TestingModule = await Test.createTestingModule(testingModuleMetadata).compile();
 
         app = moduleFixture.createNestApplication();
+
         app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+        app.useGlobalFilters(new EntityNotFoundExceptionFilter());
+
         await app.init();
     });
 
@@ -77,10 +82,7 @@ describe('CategoryController (e2e) Post exceptions', () => {
             .get('/comment/1')
             .expect(HttpStatus.NOT_FOUND)
             .expect(({ body }) => {
-                expect(body).toMatchObject({
-                    message: 'Not Found',
-                    statusCode: HttpStatus.NOT_FOUND,
-                });
+                expect(body).toMatchObject(notFoundExceptionBody);
             });
     });
 
@@ -155,7 +157,12 @@ describe('CategoryController (e2e) Post exceptions', () => {
     });
 
     it('/comment/:id (GET)', async () => {
-        return request(app.getHttpServer()).get('/comment/1111').expect(HttpStatus.NOT_FOUND);
+        return request(app.getHttpServer())
+            .get('/comment/1111')
+            .expect(HttpStatus.NOT_FOUND)
+            .expect(({ body }) => {
+                expect(body).toMatchObject(notFoundExceptionBody);
+            });
     });
 
     it('/comment (PATCH)', async () => {
@@ -215,7 +222,10 @@ describe('CategoryController (e2e) Post exceptions', () => {
         return request(app.getHttpServer())
             .delete('/comment/1111')
             .auth(accessToken, { type: 'bearer' })
-            .expect(HttpStatus.NOT_FOUND);
+            .expect(HttpStatus.NOT_FOUND)
+            .expect(({ body }) => {
+                expect(body).toMatchObject(notFoundExceptionBody);
+            });
     });
 
     it('/comment/:id (DELETE)', async () => {

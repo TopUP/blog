@@ -18,6 +18,8 @@ import { Comment } from 'src/comment/entities/comment.entity';
 import { CategoryModule } from 'src/category/category.module';
 import { Category } from 'src/category/entities/category.entity';
 import { CreateCategoryDto } from '../src/category/dto/create-category.dto';
+import { categoryHasPostsExceptionBody, notFoundExceptionBody } from '../src/utils/validation/helpers';
+import { EntityNotFoundExceptionFilter } from '../src/utils/filters/entity-not-found-exception.filter';
 
 const testingModuleMetadata = {
     imports: [
@@ -46,7 +48,10 @@ describe('CategoryController (e2e)', () => {
         const moduleFixture: TestingModule = await Test.createTestingModule(testingModuleMetadata).compile();
 
         app = moduleFixture.createNestApplication();
+
         app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+        app.useGlobalFilters(new EntityNotFoundExceptionFilter());
+
         await app.init();
     });
 
@@ -68,10 +73,7 @@ describe('CategoryController (e2e)', () => {
             .get('/category/1')
             .expect(HttpStatus.NOT_FOUND)
             .expect(({ body }) => {
-                expect(body).toMatchObject({
-                    message: 'Not Found',
-                    statusCode: 404,
-                });
+                expect(body).toMatchObject(notFoundExceptionBody);
             });
     });
 
@@ -129,7 +131,12 @@ describe('CategoryController (e2e)', () => {
     });
 
     it('/category/:id (GET)', async () => {
-        return request(app.getHttpServer()).get('/category/1111').expect(HttpStatus.NOT_FOUND);
+        return request(app.getHttpServer())
+            .get('/category/1111')
+            .expect(HttpStatus.NOT_FOUND)
+            .expect(({ body }) => {
+                expect(body).toMatchObject(notFoundExceptionBody);
+            });
     });
 
     it('/category (PATCH)', async () => {
@@ -188,7 +195,10 @@ describe('CategoryController (e2e)', () => {
         return request(app.getHttpServer())
             .delete('/category/1111')
             .auth(accessToken, { type: 'bearer' })
-            .expect(HttpStatus.NOT_FOUND);
+            .expect(HttpStatus.NOT_FOUND)
+            .expect(({ body }) => {
+                expect(body).toMatchObject(notFoundExceptionBody);
+            });
     });
 
     it('/category/:id (DELETE)', async () => {
@@ -196,6 +206,31 @@ describe('CategoryController (e2e)', () => {
             .delete('/category/1')
             .auth(accessToken, { type: 'bearer' })
             .expect(HttpStatus.CREATED);
+    });
+
+    it('/category/:id (DELETE)', async () => {
+        const category = (
+            await request(app.getHttpServer())
+                .post('/category')
+                .send({ title: 'Some title' } as CreateCategoryDto)
+                .auth(accessToken, { type: 'bearer' })
+        ).body;
+
+        await request(app.getHttpServer())
+            .post('/post')
+            .send({
+                categoryId: category.id,
+                title: 'Post title',
+                body: 'Post body',
+            })
+            .auth(accessToken, { type: 'bearer' });
+        return request(app.getHttpServer())
+            .delete('/category/' + category.id)
+            .auth(accessToken, { type: 'bearer' })
+            .expect(HttpStatus.BAD_REQUEST)
+            .expect(({ body }) => {
+                expect(body).toMatchObject(categoryHasPostsExceptionBody);
+            });
     });
 
     afterAll((done) => {

@@ -18,6 +18,7 @@ import { Category } from 'src/category/entities/category.entity';
 
 import { CommentModule } from 'src/comment/comment.module';
 import { Comment } from 'src/comment/entities/comment.entity';
+import { EntityNotFoundExceptionFilter } from '../src/utils/filters/entity-not-found-exception.filter';
 
 describe('AuthController (e2e)', () => {
     let app: INestApplication;
@@ -36,7 +37,10 @@ describe('AuthController (e2e)', () => {
         }).compile();
 
         app = moduleFixture.createNestApplication();
+
         app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+        app.useGlobalFilters(new EntityNotFoundExceptionFilter());
+
         await app.init();
     });
 

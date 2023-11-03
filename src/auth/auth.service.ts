@@ -1,12 +1,13 @@
 import * as process from 'process';
 import * as bcrypt from 'bcrypt';
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
 
 import { User } from '../user/entities/user.entity';
 import { RegisterUserDto } from './dto/register-user.dto';
+import { emailAlreadyExistsExceptionBody } from '../utils/validation/helpers';
 
 @Injectable()
 export class AuthService {
@@ -49,5 +50,15 @@ export class AuthService {
 
     findByEmail(email: string) {
         return this.repository.findOneBy({ email });
+    }
+
+    async emailAlreadyExistsFail(email: string) {
+        if (!email) {
+            return;
+        }
+
+        if (await this.findByEmail(email)) {
+            throw new BadRequestException(emailAlreadyExistsExceptionBody);
+        }
     }
 }

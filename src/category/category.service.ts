@@ -1,10 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { EntityNotFoundError, Repository } from 'typeorm';
 
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { Category } from './entities/category.entity';
+import { categoryNotFoundExceptionBody } from '../utils/validation/helpers';
 
 @Injectable()
 export class CategoryService {
@@ -22,7 +23,7 @@ export class CategoryService {
     }
 
     findOne(id: number) {
-        return this.repository.findOneBy({ id });
+        return this.repository.findOneByOrFail({ id });
     }
 
     update(id: number, updateCategoryDto: UpdateCategoryDto) {
@@ -31,5 +32,17 @@ export class CategoryService {
 
     async remove(id: number) {
         await this.repository.delete(id);
+    }
+
+    async getCategoryOrFail(categoryId: number) {
+        try {
+            return await this.findOne(categoryId);
+        } catch (e) {
+            if (e instanceof EntityNotFoundError) {
+                throw new BadRequestException(categoryNotFoundExceptionBody);
+            }
+
+            throw e;
+        }
     }
 }

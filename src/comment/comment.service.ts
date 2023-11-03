@@ -22,7 +22,7 @@ export class CommentService {
     }
 
     async findOne(id: number) {
-        return this.repository.findOneBy({ id });
+        return this.repository.findOneByOrFail({ id });
     }
 
     update(id: number, updateCommentDto: UpdateCommentDto) {

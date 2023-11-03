@@ -9,21 +9,25 @@ import {
     HttpStatus,
     UseGuards,
     ParseIntPipe,
-    NotFoundException,
     Res,
 } from '@nestjs/common';
-import { ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import { CategoryService } from './category.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { Category } from './entities/category.entity';
 import { AuthGuard } from '@nestjs/passport';
+import { PostService } from '../post/post.service';
 
 @ApiTags('Category')
+@ApiBearerAuth()
 @Controller('category')
 export class CategoryController {
-    constructor(private readonly categoryService: CategoryService) {}
+    constructor(
+        private readonly categoryService: CategoryService,
+        private readonly postService: PostService,
+    ) {}
 
     @UseGuards(AuthGuard('jwt'))
     @Post()
@@ -49,12 +53,7 @@ export class CategoryController {
     @ApiResponse({ status: HttpStatus.OK, description: 'Success', type: Category })
     @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Bad Request' })
     async findOne(@Param('id', ParseIntPipe) id: string) {
-        const category = await this.categoryService.findOne(+id);
-        if (!category) {
-            throw new NotFoundException();
-        }
-
-        return category;
+        return await this.categoryService.findOne(+id);
     }
 
     @UseGuards(AuthGuard('jwt'))
@@ -64,10 +63,7 @@ export class CategoryController {
     @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Bad Request' })
     @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Unauthorized' })
     async update(@Param('id', ParseIntPipe) id: string, @Body() updateCategoryDto: UpdateCategoryDto) {
-        const category = await this.categoryService.findOne(+id);
-        if (!category) {
-            throw new NotFoundException();
-        }
+        await this.categoryService.findOne(+id);
 
         return await this.categoryService.update(+id, updateCategoryDto);
     }
@@ -81,9 +77,8 @@ export class CategoryController {
     @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Unauthorized' })
     async remove(@Param('id', ParseIntPipe) id: string, @Res() res) {
         const category = await this.categoryService.findOne(+id);
-        if (!category) {
-            throw new NotFoundException();
-        }
+
+        await this.postService.categoryHasPostsFail(category);
 
         await this.categoryService.remove(+id);
         return res.status(HttpStatus.CREATED).send();

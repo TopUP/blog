@@ -42,8 +42,9 @@ export class AuthService {
             return null;
         }
 
-        const { password, ...userData } = user;
-        return userData;
+        // const { password, ...userData } = user;
+        delete user.password;
+        return user;
     }
 
     findByEmail(email: string) {

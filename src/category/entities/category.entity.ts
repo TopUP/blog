@@ -1,8 +1,7 @@
-import { Entity, Column, PrimaryGeneratedColumn, OneToMany, IsNull } from 'typeorm';
-import { ApiProperty, ApiTags } from '@nestjs/swagger';
+import { Entity, Column, PrimaryGeneratedColumn, OneToMany } from 'typeorm';
+import { ApiProperty } from '@nestjs/swagger';
 
 import { Post } from '../../post/entities/post.entity';
-import { Comment } from '../../comment/entities/comment.entity';
 
 @Entity()
 export class Category {

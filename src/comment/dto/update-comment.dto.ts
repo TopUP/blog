@@ -1,8 +1,5 @@
 import { ApiProperty, ApiTags } from '@nestjs/swagger';
-import { IsNotEmpty, IsNumber, IsString } from 'class-validator';
-
-import { User } from '../../user/entities/user.entity';
-import { Post } from '../../post/entities/post.entity';
+import { IsNotEmpty, IsString } from 'class-validator';
 
 @ApiTags('Comment')
 export class UpdateCommentDto {

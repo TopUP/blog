@@ -156,7 +156,7 @@ describe('PostController (e2e) Post life cycle', () => {
 
         const categories = [];
         for (let i = 1; i <= 2; i++) {
-            let categoryCreateReq = await request(app.getHttpServer())
+            const categoryCreateReq = await request(app.getHttpServer())
                 .post('/category')
                 .auth(accessToken, { type: 'bearer' })
                 .send({ title: `Post category ${i}` } as CreateCategoryDto);

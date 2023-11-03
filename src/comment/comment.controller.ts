@@ -71,7 +71,7 @@ export class CommentController {
     @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Bad Request' })
     @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Not found' })
     async findOne(@Param('id', ParseIntPipe) id: string) {
-        var comment = await this.commentService.findOne(+id);
+        const comment = await this.commentService.findOne(+id);
         if (!comment) {
             throw new NotFoundException();
         }
@@ -90,7 +90,7 @@ export class CommentController {
     @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Forbidden.' })
     @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Not found' })
     async update(@Param('id', ParseIntPipe) id: string, @Body() updateCommentDto: UpdateCommentDto, @Req() req) {
-        var comment = await this.commentService.findOne(+id);
+        const comment = await this.commentService.findOne(+id);
         if (!comment) {
             throw new NotFoundException();
         }
@@ -121,7 +121,7 @@ export class CommentController {
     @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Forbidden.' })
     @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Not found' })
     async remove(@Param('id', ParseIntPipe) id: string, @Req() req, @Res() res) {
-        var comment = await this.commentService.findOne(+id);
+        const comment = await this.commentService.findOne(+id);
         if (!comment) {
             throw new NotFoundException();
         }

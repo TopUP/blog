@@ -17,9 +17,7 @@ import { Comment } from 'src/comment/entities/comment.entity';
 
 import { CategoryModule } from 'src/category/category.module';
 import { Category } from 'src/category/entities/category.entity';
-import { CreateCategoryDto } from 'src/category/dto/create-category.dto';
 import { CreateCommentDto } from '../src/comment/dto/create-comment.dto';
-import { CreatePostDto } from '../src/post/dto/create-post.dto';
 import { UpdateCommentDto } from '../src/comment/dto/update-comment.dto';
 
 const testingModuleMetadata = {
@@ -37,28 +35,11 @@ const testingModuleMetadata = {
 describe('CategoryController (e2e) Post exceptions', () => {
     let app: INestApplication;
     let accessToken: string;
-
     const adminUserRegData = {
         id: 1,
         full_name: 'Admin',
         email: 'admin@blog.net',
         password: 'qwerty',
-    };
-    const adminUser = {
-        full_name: adminUserRegData.full_name,
-        email: adminUserRegData.email,
-        id: adminUserRegData.id,
-    };
-    const exampleUserRegData = {
-        id: 2,
-        full_name: 'Example User',
-        email: 'example_user@blog.net',
-        password: 'qwerty',
-    };
-    const exampleUser = {
-        full_name: exampleUserRegData.full_name,
-        email: exampleUserRegData.email,
-        id: exampleUserRegData.id,
     };
     const examplePostCreateData = {
         id: 1,
@@ -130,12 +111,10 @@ describe('CategoryController (e2e) Post exceptions', () => {
 
     let expectedComment;
     it('/comment (POST)', async () => {
-        const commentPostCategory = (
-            await request(app.getHttpServer())
-                .post('/category')
-                .send({ title: 'commentPostCategory' })
-                .auth(accessToken, { type: 'bearer' })
-        ).body;
+        await request(app.getHttpServer())
+            .post('/category')
+            .send({ title: 'commentPostCategory' })
+            .auth(accessToken, { type: 'bearer' });
         const commentPost = (
             await request(app.getHttpServer())
                 .post('/post')
@@ -201,7 +180,6 @@ describe('CategoryController (e2e) Post exceptions', () => {
             .auth(accessToken, { type: 'bearer' })
             .expect(HttpStatus.OK)
             .expect(({ body }) => {
-                console.debug(body);
                 expect(body).toMatchObject({
                     id: 1,
                     body: commentNewBody,

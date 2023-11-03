@@ -109,7 +109,7 @@ describe('AuthController (e2e)', () => {
                 );
             });
 
-        const loginReq = await request(app.getHttpServer())
+        await request(app.getHttpServer())
             .post('/auth/login')
             .send({
                 email: exampleUser.email,
@@ -123,8 +123,6 @@ describe('AuthController (e2e)', () => {
                     }),
                 );
             });
-
-        const accessToken: string = loginReq.body.access_token;
     });
 
     afterAll((done) => {

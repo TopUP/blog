@@ -90,7 +90,7 @@ export class PostController {
     @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Forbidden.' })
     @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Not found' })
     async update(@Param('id') id: string, @Body() updatePostDto: UpdatePostDto, @Req() req) {
-        var post = await this.postService.findOne(+id);
+        const post = await this.postService.findOne(+id);
         if (!post) {
             throw new NotFoundException();
         }
@@ -122,7 +122,7 @@ export class PostController {
     @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Forbidden.' })
     @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Not found' })
     async remove(@Param('id') id: string, @Req() req, @Res() res) {
-        var post = await this.postService.findOne(+id);
+        const post = await this.postService.findOne(+id);
         if (!post) {
             throw new NotFoundException();
         }

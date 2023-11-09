@@ -21,6 +21,7 @@ import { CreateCommentDto } from '../src/comment/dto/create-comment.dto';
 import { UpdateCommentDto } from '../src/comment/dto/update-comment.dto';
 import { EntityNotFoundExceptionFilter } from '../src/utils/filters/entity-not-found-exception.filter';
 import { notFoundExceptionBody } from '../src/utils/validation/helpers';
+import { useContainer } from 'class-validator';
 
 const testingModuleMetadata = {
     imports: [
@@ -60,6 +61,7 @@ describe('CommentController (e2e) Post exceptions', () => {
 
         app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
         app.useGlobalFilters(new EntityNotFoundExceptionFilter());
+        useContainer(moduleFixture, { fallbackOnErrors: true });
 
         await app.init();
     });

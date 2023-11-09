@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEmail, IsNotEmpty, IsString } from 'class-validator';
+import { IsExistUserEmail } from '../../utils/validation/is-exist-user-email.validator';
 
 export class RegisterUserDto {
     @ApiProperty({ description: 'Имя пользователя', nullable: false })
@@ -10,6 +11,7 @@ export class RegisterUserDto {
     @ApiProperty({ description: 'Электронная почта пользователя', nullable: false })
     @IsNotEmpty()
     @IsEmail()
+    @IsExistUserEmail()
     email: string;
 
     @ApiProperty({ description: 'Пароль пользователя', nullable: false })

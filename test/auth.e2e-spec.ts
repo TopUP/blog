@@ -19,6 +19,7 @@ import { Category } from 'src/category/entities/category.entity';
 import { CommentModule } from 'src/comment/comment.module';
 import { Comment } from 'src/comment/entities/comment.entity';
 import { EntityNotFoundExceptionFilter } from '../src/utils/filters/entity-not-found-exception.filter';
+import { useContainer } from 'class-validator';
 
 describe('AuthController (e2e)', () => {
     let app: INestApplication;
@@ -40,6 +41,7 @@ describe('AuthController (e2e)', () => {
 
         app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
         app.useGlobalFilters(new EntityNotFoundExceptionFilter());
+        useContainer(moduleFixture, { fallbackOnErrors: true });
 
         await app.init();
     });

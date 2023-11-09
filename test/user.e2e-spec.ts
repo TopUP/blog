@@ -21,6 +21,7 @@ import { Category } from 'src/category/entities/category.entity';
 import { ConfigModule } from '@nestjs/config';
 import { emailAlreadyExistsExceptionBody, notFoundExceptionBody } from '../src/utils/validation/helpers';
 import { EntityNotFoundExceptionFilter } from '../src/utils/filters/entity-not-found-exception.filter';
+import { useContainer } from 'class-validator';
 
 const testingModuleMetadata = {
     imports: [
@@ -54,6 +55,7 @@ describe('UserController (e2e) User exceptions', () => {
 
         app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
         app.useGlobalFilters(new EntityNotFoundExceptionFilter());
+        useContainer(moduleFixture, { fallbackOnErrors: true });
 
         await app.init();
     });
@@ -158,6 +160,7 @@ describe('UserController (e2e) User life cycle', () => {
 
         app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
         app.useGlobalFilters(new EntityNotFoundExceptionFilter());
+        useContainer(moduleFixture, { fallbackOnErrors: true });
 
         await app.init();
     });

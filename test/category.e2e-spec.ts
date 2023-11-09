@@ -20,6 +20,7 @@ import { Category } from 'src/category/entities/category.entity';
 import { CreateCategoryDto } from '../src/category/dto/create-category.dto';
 import { categoryHasPostsExceptionBody, notFoundExceptionBody } from '../src/utils/validation/helpers';
 import { EntityNotFoundExceptionFilter } from '../src/utils/filters/entity-not-found-exception.filter';
+import { useContainer } from 'class-validator';
 
 const testingModuleMetadata = {
     imports: [
@@ -51,6 +52,7 @@ describe('CategoryController (e2e)', () => {
 
         app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
         app.useGlobalFilters(new EntityNotFoundExceptionFilter());
+        useContainer(moduleFixture, { fallbackOnErrors: true });
 
         await app.init();
     });

@@ -11,6 +11,7 @@ import { UserModule } from '../user/user.module';
 import { User } from '../user/entities/user.entity';
 import { JwtStrategy } from './jwt.strategy';
 import { LocalStrategy } from './local.strategy';
+import { IsExistUserEmailConstraint } from '../utils/validation/is-exist-user-email.validator';
 
 @Module({
     imports: [
@@ -27,7 +28,7 @@ import { LocalStrategy } from './local.strategy';
         }),
     ],
     exports: [AuthService],
-    providers: [AuthService, LocalStrategy, JwtStrategy, User],
+    providers: [AuthService, LocalStrategy, JwtStrategy, User, IsExistUserEmailConstraint],
     controllers: [AuthController],
 })
 export class AuthModule {}

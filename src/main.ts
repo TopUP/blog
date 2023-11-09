@@ -3,6 +3,7 @@ import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
 import { EntityNotFoundExceptionFilter } from './utils/filters/entity-not-found-exception.filter';
+import { useContainer } from 'class-validator';
 
 async function bootstrap() {
     const app = await NestFactory.create(AppModule);
@@ -24,6 +25,8 @@ async function bootstrap() {
     );
 
     app.useGlobalFilters(new EntityNotFoundExceptionFilter());
+
+    useContainer(app.select(AppModule), { fallbackOnErrors: true });
 
     await app.listen(3000);
 

@@ -45,14 +45,4 @@ export class UserService {
     findByEmail(email: string) {
         return this.repository.findOneBy({ email });
     }
-
-    async emailAlreadyExistsFail(email: string) {
-        if (!email) {
-            return;
-        }
-
-        if (await this.findByEmail(email)) {
-            throw new BadRequestException(emailAlreadyExistsExceptionBody);
-        }
-    }
 }

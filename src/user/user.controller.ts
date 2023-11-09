@@ -37,8 +37,6 @@ export class UserController {
     @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Bad Request' })
     @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Unauthorized' })
     async create(@Body() createUserDto: CreateUserDto) {
-        await this.userService.emailAlreadyExistsFail(createUserDto.email);
-
         return await this.userService.create(createUserDto);
     }
 
@@ -85,8 +83,6 @@ export class UserController {
         if (user.id != req.user.id) {
             throw new ForbiddenException();
         }
-
-        await this.userService.emailAlreadyExistsFail(updateUserDto.email);
 
         return await this.userService.update(+id, updateUserDto);
     }

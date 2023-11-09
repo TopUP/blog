@@ -27,8 +27,6 @@ export class AuthController {
             });
         }
 
-        await this.authService.emailAlreadyExistsFail(data.email);
-
         const user = await this.authService.register(data);
         return this.authService.login(user);
     }
